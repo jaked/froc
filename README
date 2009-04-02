@@ -1,0 +1,8 @@
+This is froc, a library for functional reactive programming in
+OCaml. See
+
+  http://code.google.com/p/froc/
+
+for details and installation instructions.
+
+Froc is written by Jake Donham.

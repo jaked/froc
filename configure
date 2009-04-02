@@ -1,0 +1,254 @@
+#! /bin/sh
+
+# adapted from ocamlnet's configure
+
+#######################################################################
+# Helpers:
+
+# Split $PATH into words:
+oldifs="$IFS"
+IFS="   :"
+spacepath=`echo $PATH`
+IFS="$oldifs"
+
+
+in_path () {
+    # Does $1 exist in $PATH?
+    for d in $spacepath; do
+        if test -x "$d/$1"; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+
+get_path () {
+    for d in $spacepath; do
+        if test -x "$d/$1"; then
+            echo "$d/$1"
+            return
+        fi
+    done
+}
+
+#######################################################################
+# Defaults
+
+#--- Options ---
+# value 0: off
+# value 1: on
+# defaults:
+
+set_defaults () {
+    enable_ocamljs=1
+    bindir=`dirname $ocamlc`
+    libdir=`ocamlc -where`
+}
+
+ocamlc=`get_path ocamlc`
+set_defaults
+
+version="0.1"
+exec_suffix=""
+
+#######################################################################
+# Option parsing
+
+ehelp_ocamljs="Enable/disable parts that depend on ocamljs"
+
+# Which options exist? eoptions for enable/disable, woptions for with/without:
+eoptions="ocamljs"
+
+check_library () {
+    # $1: the name of the library (findlib)
+	ocamlfind query "$1" >/dev/null 2>/dev/null
+	return
+	return 1   # not found
+}
+
+check_libraryjs () {
+    # $1: the name of the library (findlib)
+	ocamlfindjs query "$1" >/dev/null 2>/dev/null
+	return
+	return 1   # not found
+}
+
+print_options () {
+	for opt in $eoptions; do
+		e="o=\$enable_$opt"
+		eval "$e"
+		uopt=`echo $opt | sed -e 's/_/-/g'`
+		if [ $o -gt 0 ]; then
+			echo "    -enable-$uopt"
+		else
+			echo "    -disable-$uopt"
+		fi
+	done
+	echo "    -bindir $bindir"
+	echo "    -libdir $libdir"
+}
+
+
+usage () {
+	set_defaults
+	cat <<_EOF_ >&2
+usage: ./configure [ options ]
+
+_EOF_
+	for opt in $eoptions; do
+		e="help=\$ehelp_$opt"
+		eval "$e"
+		uopt=`echo $opt | sed -e 's/_/-/g'`
+		echo "-enable-$uopt:" >&2
+		echo "-disable-$uopt:" >&2
+		echo "        $help" >&2
+	done
+	cat <<_EOF_ >&2
+-bindir dir
+        Install binaries into this directory
+
+-libdir dir
+        Install libraries into this directory (default same as ocamlc -where)
+
+Defaults are:
+
+_EOF_
+	print_options >&2
+	exit 1
+}
+
+
+check_eopt () {
+	for x in $eoptions; do
+		if [ "$x" = "$1" ]; then
+			return 0
+		fi
+	done
+	echo "Unknown option: $1" >&2
+	exit 1
+}
+
+echo "Welcome to froc version $version" >&2
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		-enable-*)
+			opt=`echo "$1" | sed -e 's/-enable-//' -e 's/-/_/g'`
+			check_eopt "$opt"
+			eval "enable_$opt=2"
+			shift
+			;;
+		-disable-*)
+			opt=`echo "$1" | sed -e 's/-disable-//' -e 's/-/_/g'`
+			check_eopt "$opt"
+			eval "enable_$opt=0"
+			shift
+			;;
+                -bindir)
+                        bindir="$2"
+                        shift
+                        shift
+                        ;;
+                -libdir)
+                        libdir="$2"
+                        shift
+                        shift
+                        ;;
+		-version)
+			echo "$version"
+			exit 0
+			;;
+		*)
+			usage
+	esac
+done
+
+# Sanity checks
+
+case "$bindir" in
+  /*) ;;
+  "") ;;
+   *) echo "The -bindir directory must be absolute." 1>&2; exit 2;;
+esac
+case "$libdir" in
+  /*) ;;
+  "") ;;
+   *) echo "The -libdir directory must be absolute." 1>&2; exit 2;;
+esac
+
+######################################################################
+# Check ocamlfind
+
+printf "%s" "Checking for findlib... "
+if check_library stdlib; then
+    echo "found"
+else
+    echo "not found"
+    echo "Make sure that ocamlfind is in your PATH, or download findlib"
+    echo "from www.ocaml-programming.de"
+    exit 1
+fi
+
+######################################################################
+# Check that ocamljs is available:
+
+if [ $enable_ocamljs -gt 0 ]; then
+    printf "%s" "Checking for ocamljs... "
+    if check_libraryjs ocamljs; then
+        echo "found"
+    else
+        echo "not found"
+        echo "Ocamljs is required for -enable-ocamljs."
+        echo "Try -disable-ocamljs, or get ocamljs from:"
+        echo "http://code.google.com/p/ocamljs/"
+        exit 1
+    fi
+fi
+
+######################################################################
+# Summary
+
+echo
+echo "Effective options:"
+print_options
+echo
+
+pkglist="froc"
+
+if [ $enable_ocamljs -gt 0 ]; then
+    pkglist="$pkglist froc-dom"
+fi
+
+######################################################################
+# Write Makefile.conf
+
+echo "Writing Makefile.conf"
+cat <<_EOF_ >Makefile.conf
+# Makefike.conf written by configure
+# The froc version
+VERSION = $version
+
+# The packages to build in the right order:
+PKGLIST = $pkglist
+
+# Where binaries are installed:
+BINDIR = $bindir
+
+# Where libraries are installed:
+LIBDIR = $libdir
+
+ENABLE_OCAMLJS = $enable_ocamljs
+_EOF_
+
+######################################################################
+# Finish
+
+echo
+echo "Please check Makefile.conf."
+echo
+echo "You can now compile froc by invoking"
+echo "   make all"
+echo "Finally, a"
+echo "   make install"
+echo "will install the package(s)."
