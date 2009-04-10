@@ -5,4 +5,11 @@ OCaml. See
 
 for details and installation instructions.
 
+For a quick start:
+
+  1. ./configure (-disable-ocamljs if you do not have ocamljs)
+  2. make
+  3. make install
+  4. make examples
+
 Froc is written by Jake Donham.
