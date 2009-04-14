@@ -11,13 +11,11 @@ all: myocamlbuild.ml
 	OCAMLFIND_IGNORE_DUPS_IN=$(LIBDIR)/site-lib \
 	OCAMLPATH=`pwd`/../../stage \
 	ocamlbuild froc-dom.cmjsa
-	ocamlfind remove -destdir ../../stage froc-dom
-	ocamlfind install -destdir ../../stage froc-dom META $(BFILES)
 
 doc:
 	OCAMLFIND_IGNORE_DUPS_IN=$(LIBDIR)/site-lib \
 	OCAMLPATH=`pwd`/../../stage \
-	ocamlbuild doc.docdir/index.html
+	ocamlbuild -no-links doc.docdir/index.html
 
 install:
 	ocamlfind install froc-dom META $(BFILES)
