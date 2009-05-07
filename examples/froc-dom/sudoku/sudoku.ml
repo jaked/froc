@@ -35,6 +35,8 @@ let attach_input_value i b =
 let attach_backgroundColor e b =
   notify_e (F.changes b) (fun v -> e#_get_style#_set_backgroundColor v)
 
+let (check_enabled, set_check_enabled) = make_cell false
+
 let make_board () =
   let make_input () =
     let input = (d#createElement "input" : D.input) in
@@ -86,12 +88,16 @@ let make_board () =
 
   ArrayLabels.iteri rows ~f:(fun i row ->
     ArrayLabels.iteri row ~f:(fun j (cell, _, input) ->
+      let adjs = adjacents i j in
       attach_backgroundColor input
-        (F.bindN (adjacents i j) (fun adjs ->
-          cell >>= fun v ->
-            if v <> None && List.mem v adjs
-            then F.return "#ff0000"
-            else F.return "#ffffff"))));
+        (check_enabled >>= function
+          | false -> F.return "#ffffff"
+          | true ->
+              F.bindN adjs (fun adjs ->
+                cell >>= fun v ->
+                  if v <> None && List.mem v adjs
+                  then F.return "#ff0000"
+                  else F.return "#ffffff"))));
 
   let make_td i j input =
     let td = d#createElement "td" in
@@ -146,6 +152,7 @@ let get_board rows _ =
     (Lwt.catch
         (fun () ->
           Server.get_board () >>= fun board ->
+            set_check_enabled false;
             for i = 0 to 8 do
               for j = 0 to 8 do
                 let (_,set,input) = rows.(i).(j) in
@@ -154,6 +161,7 @@ let get_board rows _ =
                 set v;
               done
             done;
+            set_check_enabled true;
             Lwt.return ())
         (fun e ->
           IFDEF DEBUG THEN console#log (Obj.magic e) ENDIF;
@@ -169,4 +177,5 @@ let onload () =
 
 ;;
 
+F.init ();
 D.window#_set_onload (Ocamljs.jsfun onload)
