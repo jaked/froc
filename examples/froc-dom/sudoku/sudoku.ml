@@ -149,12 +149,9 @@ ENDIF
 
 let get_board rows _ =
   set_check_enabled false;
-  for i = 0 to 8 do
-    for j = 0 to 8 do
-      let (_,set,_) = rows.(i).(j) in
-      set None;
-    done
-  done;
+  ArrayLabels.iter rows ~f:(fun row ->
+    ArrayLabels.iter row ~f:(fun (_,set,_) ->
+      set None));
   ignore
     (Lwt.catch
         (fun () ->
