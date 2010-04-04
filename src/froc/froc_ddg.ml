@@ -79,20 +79,15 @@ struct
     t
 end
 
-let now = ref (TS.init ())
 let pq = ref (PQ.empty)
 
 let init () =
-  now := TS.init ();
+  TS.init ();
   pq := PQ.empty
 
 let next_id =
   let next_id = ref 1 in
   fun () -> let id = !next_id in incr next_id; id
-
-let tick () =
-  now := TS.add_after !now;
-  !now
 
 exception Unset
 
@@ -146,16 +141,16 @@ let add_dep ts t dep =
 let enqueue e _ = pq := PQ.add e !pq
 
 let add_reader t read =
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   add_dep start t (enqueue r)
 
 let notify t f =
-  add_dep (tick ()) t f
+  add_dep (TS.tick ()) t f
 
 let cleanup f =
-  TS.set_cleanup (tick()) f
+  TS.set_cleanup (TS.tick ()) f
 
 let connect t t' =
   let f _ = write_result t t'.state in
@@ -211,14 +206,14 @@ let propagate () =
         then
           begin
             TS.splice_out r.start r.finish;
-            now := r.start;
+            TS.set_now r.start;
             r.read ();
           end;
         prop ()
       end in
-  let now' = !now in
+  let now' = TS.get_now () in
   prop ();
-  now := now'
+  TS.set_now now'
 
 let set_exn_handler h = handle_exn := h
 
@@ -231,9 +226,9 @@ let bind2_gen assign ?eq f t1 t2 =
       | Value v1, Value v2 ->
           try assign res (f v1 v2)
           with e -> write_exn res e in
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   add_dep start t1 (enqueue r);
   add_dep start t2 (enqueue r);
   res
@@ -252,9 +247,9 @@ let bind3_gen assign ?eq f t1 t2 t3 =
       | Value v1, Value v2, Value v3 ->
           try assign res (f v1 v2 v3)
           with e -> write_exn res e in
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   add_dep start t1 (enqueue r);
   add_dep start t2 (enqueue r);
   add_dep start t3 (enqueue r);
@@ -275,9 +270,9 @@ let bind4_gen assign ?eq f t1 t2 t3 t4 =
       | Value v1, Value v2, Value v3, Value v4 ->
           try assign res (f v1 v2 v3 v4)
           with e -> write_exn res e in
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   add_dep start t1 (enqueue r);
   add_dep start t2 (enqueue r);
   add_dep start t3 (enqueue r);
@@ -300,9 +295,9 @@ let bind5_gen assign ?eq f t1 t2 t3 t4 t5 =
       | Value v1, Value v2, Value v3, Value v4, Value v5 ->
           try assign res (f v1 v2 v3 v4 v5)
           with e -> write_exn res e in
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   add_dep start t1 (enqueue r);
   add_dep start t2 (enqueue r);
   add_dep start t3 (enqueue r);
@@ -327,9 +322,9 @@ let bind6_gen assign ?eq f t1 t2 t3 t4 t5 t6 =
       | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6 ->
           try assign res (f v1 v2 v3 v4 v5 v6)
           with e -> write_exn res e in
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   add_dep start t1 (enqueue r);
   add_dep start t2 (enqueue r);
   add_dep start t3 (enqueue r);
@@ -356,9 +351,9 @@ let bind7_gen assign ?eq f t1 t2 t3 t4 t5 t6 t7 =
       | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6, Value v7 ->
           try assign res (f v1 v2 v3 v4 v5 v6 v7)
           with e -> write_exn res e in
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   add_dep start t1 (enqueue r);
   add_dep start t2 (enqueue r);
   add_dep start t3 (enqueue r);
@@ -382,9 +377,9 @@ let bindN_gen assign ?eq f ts =
           ts in
       assign res (f vs)
     with e -> write_exn res e in
-  let start = tick () in
+  let start = TS.tick () in
   read ();
-  let r = { read = read; start = start; finish = tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
   List.iter (fun t -> add_dep start t (enqueue r)) ts;
   res
 

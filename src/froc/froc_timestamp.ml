@@ -37,14 +37,23 @@ let next_id =
   let next_id = ref 1 in
   fun () -> let id = !next_id in incr next_id; id
 
-let init () =
+let empty () =
   let rec s = { id = 0; next = s; cleanup = ignore } in
   { id = next_id (); next = s; cleanup = ignore }
 
-let add_after t =
+let now = ref (empty ())
+
+let get_now () = !now
+let set_now t = now := t
+
+let init () = now := empty ()
+
+let tick () =
+  let t = !now in
   check t;
   let t' = { id = next_id (); next = t.next; cleanup = ignore } in
   t.next <- t';
+  now := t';
   t'
 
 let set_cleanup t cleanup =
