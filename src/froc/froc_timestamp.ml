@@ -73,7 +73,7 @@ let splice_out t1 t2 =
       | -1 -> assert false
       | 0 -> raise (Invalid_argument "t1 >= t2")
       | id when id = t2.id -> ()
-      | _ -> t.id <- -1; t.cleanup (); t.cleanup <- ignore; loop t.next in
+      | _ -> t.cleanup (); t.cleanup <- ignore; t.id <- -1; loop t.next in
   loop t1.next;
   t1.next <- t2
 
