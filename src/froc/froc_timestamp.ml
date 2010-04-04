@@ -56,10 +56,6 @@ let tick () =
   now := t';
   t'
 
-let set_cleanup t cleanup =
-  check t;
-  t.cleanup <- cleanup
-
 let add_cleanup t cleanup' =
   check t;
   let cleanup = t.cleanup in

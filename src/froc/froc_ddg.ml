@@ -150,7 +150,7 @@ let notify t f =
   add_dep (TS.tick ()) t f
 
 let cleanup f =
-  TS.set_cleanup (TS.tick ()) f
+  TS.add_cleanup (TS.tick ()) f
 
 let connect t t' =
   let f _ = write_result t t'.state in
