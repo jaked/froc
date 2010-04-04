@@ -97,4 +97,4 @@ THEN
 F.set_debug (fun s -> console#log s);
 F.set_exn_handler (fun e -> console#log (Obj.magic e));
 ENDIF;
-D.window#_set_onload (Ocamljs.jsfun onload)
+D.window#_set_onload onload
