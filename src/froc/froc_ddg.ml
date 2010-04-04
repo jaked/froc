@@ -28,7 +28,6 @@ type 'a result = Value of 'a | Fail of exn
 
 type 'a t = {
   id : int;
-  event : bool;
   eq : 'a -> 'a -> bool;
   mutable state : 'a result;
   mutable deps : ('a result -> unit) Dlist.t;
@@ -92,12 +91,10 @@ let next_id =
 exception Unset
 
 let make
-    ?(event = false)
     ?(eq = fun v1 v2 -> try compare v1 v2 = 0 with _ -> false)
     ?(result = Fail Unset)
     () = {
   id = next_id ();
-  event = event;
   eq = eq;
   state = result;
   deps = Dlist.empty ();
@@ -109,19 +106,16 @@ let fail e = make ~result:(Fail e) ()
 let handle_exn = ref (fun e -> raise e)
 
 let write_result t r =
-  if t.event
-  then Dlist.iter (fun f -> try f r with e -> !handle_exn e) t.deps
-  else
-    let eq =
-      match t.state, r with
-        | Value v1, Value v2 -> t.eq v1 v2
-        | Fail e1, Fail e2 -> e1 == e2 (* XXX ? *)
-        | _ -> false in
-    if not eq
-    then begin
-      t.state <- r;
-      Dlist.iter (fun f -> try f r with e -> !handle_exn e) t.deps
-    end
+  let eq =
+    match t.state, r with
+      | Value v1, Value v2 -> t.eq v1 v2
+      | Fail e1, Fail e2 -> e1 == e2 (* XXX ? *)
+      | _ -> false in
+  if not eq
+  then begin
+    t.state <- r;
+    Dlist.iter (fun f -> try f r with e -> !handle_exn e) t.deps
+  end
 
 let write t v = write_result t (Value v)
 let write_exn t e = write_result t (Fail e)

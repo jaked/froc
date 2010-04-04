@@ -18,25 +18,52 @@
  * MA 02111-1307, USA
  *)
 
+module Dlist = Froc_dlist
+module TS = Froc_timestamp
+
 include Froc_ddg
 
-type 'a event = 'a t
+type 'a event = {
+  e_id : int;
+  mutable e_deps : ('a result -> unit) Dlist.t;
+}
+
 type 'a behavior = 'a t
-let notify_e = notify
+
+let notify_e t f =
+  let dl = Dlist.add_after t.e_deps f in
+  let cancel () = Dlist.remove dl in
+  TS.add_cleanup (TS.tick ()) cancel
+
 let notify_b = notify
 
 let switch bb = bb >>= fun b -> b
 
-let make_event () = make ~event:true ()
+let next_id =
+  let next_id = ref 1 in
+  fun () -> let id = !next_id in incr next_id; id
+
+let make_event () = {
+  e_id = next_id ();
+  e_deps = Dlist.empty ();
+}
+
+let handle_exn = ref raise
+
+let send_result t r =
+  Dlist.iter (fun f -> try f r with e -> !handle_exn e) t.e_deps
+
+let send t v = send_result t (Value v)
+let send_exn t e = send_result t (Fail e)
 
 let merge ts =
   let t = make_event () in
-  List.iter (fun t' -> notify t' (write_result t)) ts;
+  List.iter (fun t' -> notify_e t' (send_result t)) ts;
   t
 
 let map f t =
   let t' = make_event () in
-  notify t
+  notify_e t
     (fun r ->
       let r =
         match r with
@@ -44,12 +71,12 @@ let map f t =
           | Value v ->
               try Value (f v)
               with e -> Fail e in
-      write_result t' r);
+      send_result t' r);
   t'
 
 let filter p t =
   let t' = make_event () in
-  notify t
+  notify_e t
     (fun r ->
       let r =
         match r with
@@ -57,13 +84,13 @@ let filter p t =
           | Value v ->
               try if p v then Some (Value v) else None
               with e -> Some (Fail e) in (* ? *)
-      match r with Some r -> write_result t' r | _ -> ());
+      match r with Some r -> send_result t' r | _ -> ());
   t'
 
 let collect f init t =
   let t' = make_event () in
   let s = ref (Value init) in
-  notify t
+  notify_e t
     (fun r ->
       let r =
         match !s, r with
@@ -72,8 +99,12 @@ let collect f init t =
           | Value sv, Value v ->
               try Some (Value (f sv v))
               with e -> Some (Fail e) in
-      match r with Some r -> s := r; write_result t' r | _ -> ());
+      match r with Some r -> s := r; send_result t' r | _ -> ());
   t'
+
+let set_exn_handler h =
+  set_exn_handler h;
+  handle_exn := h
 
 let q = Queue.create ()
 let running = ref false
@@ -92,13 +123,13 @@ let enqueue f =
   if not !running
   then run_queue ()
 
-let send_result t r = enqueue (fun () -> write_result t r)
+let send_result t r = enqueue (fun () -> send_result t r)
 let send t v = send_result t (Value v)
 let send_exn t e = send_result t (Fail e)
 
 let hold_result ?eq init e =
   let b = make ?eq ~result:init () in
-  notify e (write_result b);
+  notify_e e (write_result b);
   b
 
 let hold ?eq init e = hold_result ?eq (Value init) e

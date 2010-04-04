@@ -46,7 +46,7 @@ val write_result : 'a t -> 'a result -> unit
 val notify : 'a t -> ('a result -> unit) -> unit
 val cleanup : (unit -> unit) -> unit
 
-val make : ?event:bool -> ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t
+val make : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t
 
 val init : unit -> unit
 val propagate : unit -> unit
