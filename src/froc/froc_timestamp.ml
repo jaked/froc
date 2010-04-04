@@ -18,7 +18,7 @@
  * MA 02111-1307, USA
  *)
 
-let debug = ref (fun _ -> ())
+let debug = ref ignore
 let set_debug f = debug := f
 
 type t = {

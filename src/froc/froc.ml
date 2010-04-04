@@ -28,17 +28,6 @@ type 'a event = {
   mutable e_deps : ('a result -> unit) Dlist.t;
 }
 
-type 'a behavior = 'a t
-
-let notify_e t f =
-  let dl = Dlist.add_after t.e_deps f in
-  let cancel () = Dlist.remove dl in
-  TS.add_cleanup (TS.tick ()) cancel
-
-let notify_b = notify
-
-let switch bb = bb >>= fun b -> b
-
 let next_id =
   let next_id = ref 1 in
   fun () -> let id = !next_id in incr next_id; id
@@ -50,11 +39,20 @@ let make_event () = {
 
 let handle_exn = ref raise
 
+let set_exn_handler h =
+  set_exn_handler h;
+  handle_exn := h
+
 let send_result t r =
   Dlist.iter (fun f -> try f r with e -> !handle_exn e) t.e_deps
 
 let send t v = send_result t (Value v)
 let send_exn t e = send_result t (Fail e)
+
+let notify_e t f =
+  let dl = Dlist.add_after t.e_deps f in
+  let cancel () = Dlist.remove dl in
+  TS.add_cleanup (TS.tick ()) cancel
 
 let merge ts =
   let t = make_event () in
@@ -102,11 +100,12 @@ let collect f init t =
       match r with Some r -> s := r; send_result t' r | _ -> ());
   t'
 
-let set_exn_handler h =
-  set_exn_handler h;
-  handle_exn := h
-
 let q = Queue.create ()
+
+let init () =
+  init ();
+  Queue.clear q
+
 let running = ref false
 
 let run_queue () =
@@ -127,6 +126,12 @@ let send_result t r = enqueue (fun () -> send_result t r)
 let send t v = send_result t (Value v)
 let send_exn t e = send_result t (Fail e)
 
+type 'a behavior = 'a t
+
+let notify_b = notify
+
+let switch bb = bb >>= fun b -> b
+
 let hold_result ?eq init e =
   let b = make ?eq ~result:init () in
   notify_e e (write_result b);
@@ -143,7 +148,3 @@ let when_true b =
   map (fun b -> ()) (filter (fun b -> b) (changes b))
 
 let count e = hold 0 (collect (fun n _ -> n + 1) 0 e)
-
-let init () =
-  init ();
-  Queue.clear q

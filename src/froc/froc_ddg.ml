@@ -21,8 +21,11 @@
 module Dlist = Froc_dlist
 module TS = Froc_timestamp
 
-let debug = ref (fun _ -> ())
-let set_debug f = debug := f; TS.set_debug f
+let debug = ref ignore
+
+let set_debug f =
+  debug := f;
+  TS.set_debug f
 
 type 'a result = Value of 'a | Fail of exn
 
@@ -88,10 +91,12 @@ let next_id =
   let next_id = ref 1 in
   fun () -> let id = !next_id in incr next_id; id
 
+let total_eq v1 v2 = try compare v1 v2 = 0 with _ -> false
+
 exception Unset
 
 let make
-    ?(eq = fun v1 v2 -> try compare v1 v2 = 0 with _ -> false)
+    ?(eq = total_eq)
     ?(result = Fail Unset)
     () = {
   id = next_id ();
@@ -103,7 +108,8 @@ let make
 let return ?eq v = make ?eq ~result:(Value v) ()
 let fail e = make ~result:(Fail e) ()
 
-let handle_exn = ref (fun e -> raise e)
+let handle_exn = ref raise
+let set_exn_handler h = handle_exn := h
 
 let write_result t r =
   let eq =
@@ -208,8 +214,6 @@ let propagate () =
   let now' = TS.get_now () in
   prop ();
   TS.set_now now'
-
-let set_exn_handler h = handle_exn := h
 
 let bind2_gen assign ?eq f t1 t2 =
   let res = make ?eq () in
