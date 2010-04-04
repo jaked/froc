@@ -1,11 +1,13 @@
 -include Makefile.conf
 
 all:
+	mkdir -p stage
 	for pkg in $(PKGLIST); do \
 		$(MAKE) -C src/$$pkg all || exit; \
 	done
 
 doc:
+	mkdir -p doc
 	for pkg in $(PKGLIST); do \
 		$(MAKE) -C src/$$pkg doc || exit; \
 	done
@@ -26,8 +28,8 @@ clean:
 		$(MAKE) -C src/$$pkg clean || exit; \
 	done
 	make -C examples clean
-	rm -rf doc/*
-	rm -rf stage/*
+	rm -rf doc
+	rm -rf stage
 
 distclean: clean
 	rm -rf Makefile.conf
