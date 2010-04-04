@@ -30,5 +30,6 @@ val add_cleanup : t -> (unit -> unit) -> unit
 val splice_out : t -> t -> unit
 val is_spliced_out : t -> bool
 val compare : t -> t -> int
+val eq : t -> t -> bool
 
 val set_debug : (string -> unit) -> unit

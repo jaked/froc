@@ -98,3 +98,5 @@ let compare t1 t2 =
             | id when id = t2.id -> -1
             | _ -> loop t.next in
         loop t1.next
+
+let eq t1 t2 = t1.id = t2.id
