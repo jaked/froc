@@ -30,7 +30,9 @@ and ('a, 'b) bucketlist =
     Empty
   | Cons of 'a * 'b * ('a, 'b) bucketlist
 
-let create ?(size = 17) ?(hash = Hashtbl.hash) ?(eq = (=)) () =
+let total_eq v1 v2 = try compare v1 v2 = 0 with _ -> false
+
+let create ?(size = 17) ?(hash = Hashtbl.hash) ?(eq = total_eq) () =
   let s = min (max 1 size) Sys.max_array_length in
   { hash = hash; eq = eq; size = 0; data = Array.make s Empty }
 
@@ -64,28 +66,28 @@ let remove h key p =
       Empty ->
         Empty
     | Cons(k, i, next) ->
-        if compare k key = 0 && p i
+        if h.eq k key && p i
         then begin h.size <- pred h.size; next end
         else Cons(k, i, remove_bucket next) in
   let i = (h.hash key) mod (Array.length h.data) in
   h.data.(i) <- remove_bucket h.data.(i)
 
-let rec find_rec key p = function
+let rec find_rec h key p = function
     Empty ->
       raise Not_found
   | Cons(k, d, rest) ->
-      if compare key k = 0 && p d then d else find_rec key p rest
+      if h.eq key k && p d then d else find_rec h key p rest
 
 let find h key p =
   match h.data.((h.hash key) mod (Array.length h.data)) with
     Empty -> raise Not_found
   | Cons(k1, d1, rest1) ->
-      if compare key k1 = 0 && p d1 then d1 else
+      if h.eq key k1 && p d1 then d1 else
       match rest1 with
         Empty -> raise Not_found
       | Cons(k2, d2, rest2) ->
-          if compare key k2 = 0 && p d2 then d2 else
+          if h.eq key k2 && p d2 then d2 else
           match rest2 with
             Empty -> raise Not_found
           | Cons(k3, d3, rest3) ->
-              if compare key k3 = 0 && p d3 then d3 else find_rec key p rest3
+              if h.eq key k3 && p d3 then d3 else find_rec h key p rest3
