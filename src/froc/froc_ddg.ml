@@ -195,25 +195,62 @@ let catch_gen assign f ?eq err =
 let catch f err = catch_gen connect f ~eq:never err
 let catch_lift f ?eq err = catch_gen write f ?eq err
 
-let propagate () =
-  let rec prop () =
-    if not (PQ.is_empty !pq)
-    then
-      begin
-        let r = PQ.find_min !pq in
-        pq := PQ.remove_min !pq;
-        if not (TS.is_spliced_out r.start)
-        then
-          begin
-            TS.splice_out r.start r.finish;
+let finish = ref []
+
+let rec prop ?until () =
+  if not (PQ.is_empty !pq)
+  then
+    let r = PQ.find_min !pq in
+    if TS.is_spliced_out r.start
+    then begin pq := PQ.remove_min !pq; prop ?until () end
+    else
+      match until with
+        | Some until when TS.compare r.start until = 1 -> ()
+        | _ ->
+            pq := PQ.remove_min !pq;
             TS.set_now r.start;
+            finish := r.finish :: !finish;
             r.read ();
-          end;
-        prop ()
-      end in
+            finish := List.tl !finish;
+            TS.splice_out (TS.get_now ()) r.finish;
+            prop ()
+
+let propagate () =
   let now' = TS.get_now () in
   prop ();
   TS.set_now now'
+
+type 'a memo = {
+  m_result : 'a result;
+  m_start : TS.t;
+  m_finish : TS.t;
+}
+
+let memo ?size ?hash ?eq () =
+  let h = Froc_hashtbl.create ?size ?hash ?eq () in
+  fun f k ->
+    let result =
+      try
+        if !finish = [] then raise Not_found;
+        let ok m =
+          TS.compare (TS.get_now ()) m.m_start = -1 &&
+          TS.compare m.m_finish (List.hd !finish) = -1 in
+        let m = Froc_hashtbl.find h k ok in
+        TS.splice_out (TS.get_now ()) m.m_start;
+        prop ~until:m.m_finish ();
+        TS.set_now m.m_finish;
+        m.m_result
+      with Not_found ->
+        let start = TS.tick () in
+        let result = try Value (f k) with e -> Fail e in
+        let finish = TS.tick () in
+        Froc_hashtbl.add h k { m_result = result; m_start = start; m_finish = finish };
+        let cancel () =
+          let ok m = TS.eq start m.m_start && TS.eq finish m.m_finish in
+          Froc_hashtbl.remove h k ok in
+        TS.add_cleanup finish cancel;
+        result in
+    match result with Value v -> v | Fail e -> raise e
 
 let bind2_gen assign ?eq f t1 t2 =
   let res = make ?eq () in

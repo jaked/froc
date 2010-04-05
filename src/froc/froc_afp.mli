@@ -137,6 +137,12 @@ val write_exn : 'a t -> exn -> unit
 val propagate : unit -> unit
   (** Process any outstanding changes so all changeables are consistent. *)
 
+val memo :
+  ?size:int -> ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit ->
+  ('a -> 'b) ->
+  ('a -> 'b)
+  (** *)
+
 (** {2 Variations} *)
 
 val bindN : 'a t list -> ('a list -> 'b t) -> 'b t

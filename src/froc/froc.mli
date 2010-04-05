@@ -229,6 +229,12 @@ val count : 'a event -> int behavior
      [count] was called).
   *)
 
+val memo :
+  ?size:int -> ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit ->
+  ('a -> 'b) ->
+  ('a -> 'b)
+  (** *)
+
 (** {2 Variations} *)
 
 val bindN : 'a behavior list -> ('a list -> 'b behavior) -> 'b behavior

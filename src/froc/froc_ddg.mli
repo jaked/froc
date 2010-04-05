@@ -53,6 +53,11 @@ val propagate : unit -> unit
 val set_exn_handler : (exn -> unit) -> unit
 val set_debug : (string -> unit) -> unit
 
+val memo :
+  ?size:int -> ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit ->
+  ('a -> 'b) ->
+  ('a -> 'b)
+
 val bind2 :
   'a1 t -> 'a2 t ->
   ('a1 -> 'a2 -> 'b t) ->
