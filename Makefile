@@ -27,6 +27,7 @@ clean:
 	for pkg in $(PKGLIST); do \
 		$(MAKE) -C src/$$pkg clean || exit; \
 	done
+	make -C test clean
 	make -C examples clean
 	rm -rf doc
 	rm -rf stage
@@ -34,10 +35,13 @@ clean:
 distclean: clean
 	rm -rf Makefile.conf
 
+test:
+	make -C test
+
 examples:
 	make -C examples
 
-.PHONY: examples doc
+.PHONY: test examples doc
 
 gcode:
 	rsync -a --delete --exclude '.svn/' doc/ ../doc/

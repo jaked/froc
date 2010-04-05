@@ -1,0 +1,2 @@
+<*.ml*> : pkg_oUnit, pkg_froc
+<*.byte> : pkg_oUnit, pkg_froc
