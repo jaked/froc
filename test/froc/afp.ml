@@ -46,11 +46,12 @@ let tests = "Afp" >::: [
 
     let lengths = ref 0 in
     let rec length l =
-      incr lengths;
-      l >>= function
-        | L.Nil -> return 0
-        | L.Cons (_, l) ->
-            length l >>= fun len -> return (len + 1) in
+      l >>= fun l ->
+        incr lengths;
+        match l with
+          | L.Nil -> return 0
+          | L.Cons (_, l) ->
+              length l >>= fun len -> return (len + 1) in
     let assert_lengths n = assert_equal ~printer:string_of_int n !lengths in
 
     let l3 = return L.Nil in
@@ -68,14 +69,14 @@ let tests = "Afp" >::: [
     write l2 L.Nil;
     propagate ();
     assert_len 2;
-    assert_lengths 0;
+    assert_lengths 1;
 
     lengths := 0;
     let l4 = return (L.Cons (4, l1)) in
     write l0 (L.Cons (0, l4));
     propagate ();
     assert_len 3;
-    assert_lengths 3
+    assert_lengths 4
   end;
 
   "length_memo" >:: begin fun () ->
@@ -87,11 +88,13 @@ let tests = "Afp" >::: [
     let lengths = ref 0 in
     let memo = memo () in
     let rec length l =
-      incr lengths;
-      l >>= function
-        | L.Nil -> return 0
-        | L.Cons (_, l) ->
-            memo length l >>= fun len -> return (len + 1) in
+      l >>= fun l ->
+        incr lengths;
+        match l with
+          | L.Nil -> return 0
+          | L.Cons (_, l) ->
+              memo length l >>= fun len -> return (len + 1) in
+    let length l = memo length l in
     let assert_lengths n = assert_equal ~printer:string_of_int n !lengths in
 
     let l3 = return L.Nil in
@@ -106,16 +109,11 @@ let tests = "Afp" >::: [
     assert_lengths 4;
 
     lengths := 0;
-    write l2 L.Nil;
-    propagate ();
-    assert_len 2;
-    assert_lengths 0;
-
-    lengths := 0;
+    write l1 (L.Cons (1, l3));
     let l4 = return (L.Cons (4, l1)) in
     write l0 (L.Cons (0, l4));
     propagate ();
     assert_len 3;
-    assert_lengths 1
+    assert_lengths 3
   end
 ]
