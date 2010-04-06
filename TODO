@@ -5,8 +5,4 @@ froc-dom
 docs, wiki
 tutorial
 
-froc:
-  can dlist be replaced with slist?
-  move event stuff from froc_ddg to froc
-  memo functions
-  cleanup?
+quickhull example
