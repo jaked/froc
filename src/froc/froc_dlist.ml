@@ -8,10 +8,6 @@ let empty () =
   let rec t = { data = Obj.magic None; prev = t; next = t } in
   t
 
-let prev t = t.prev
-
-let next t = t.next
-
 let add_after t d =
   let n = { data = d; prev = t; next = t.next } in
   t.next.prev <- n;
