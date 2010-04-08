@@ -33,7 +33,6 @@ let set_exn_handler h = handle_exn := h
 type 'a result = Value of 'a | Fail of exn
 
 type 'a t = {
-  id : int;
   eq : 'a -> 'a -> bool;
   mutable state : 'a result;
   mutable deps : ('a result -> unit) Dlist.t;
@@ -43,15 +42,10 @@ let total_eq v1 v2 = try compare v1 v2 = 0 with _ -> false
 
 exception Unset
 
-let next_id =
-  let next_id = ref 1 in
-  fun () -> let id = !next_id in incr next_id; id
-
 let make
     ?(eq = total_eq)
     ?(result = Fail Unset)
     () = {
-  id = next_id ();
   eq = eq;
   state = result;
   deps = Dlist.empty ();
