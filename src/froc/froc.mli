@@ -72,7 +72,7 @@ val fail : exn -> 'a behavior
      [fail e] is a behavior that fails with the exception [e].
   *)
 
-val bind : 'a behavior -> ('a -> 'b behavior) -> 'b behavior
+val bind : ?eq:('b -> 'b -> bool) -> 'a behavior -> ('a -> 'b behavior) -> 'b behavior
   (**
      [bind b f] behaves as [f] applied to the value of [b]. If [b]
      fails, [bind b f] also fails, with the same exception.
@@ -86,7 +86,7 @@ val (>>=) : 'a behavior -> ('a -> 'b behavior) -> 'b behavior
      [b >>= f] is an alternative notation for [bind b f].
   *)
 
-val blift : 'a behavior -> ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'b behavior
+val blift : ?eq:('b -> 'b -> bool) -> 'a behavior -> ('a -> 'b) -> 'b behavior
   (**
      [blift b ?eq f] is equivalent to [bind b (fun v -> return ?eq (f
      v))], but is slightly more efficient.
@@ -99,26 +99,26 @@ val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a behavior -> 'b behavior
      binding it to a behavior.
   *)
 
-val catch : (unit -> 'a behavior) -> (exn -> 'a behavior) -> 'a behavior
+val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a behavior) -> (exn -> 'a behavior) -> 'a behavior
   (**
      [catch b f] behaves the same as [b()] if [b()] succeeds. If [b()]
      fails with some exception [e], [catch b f] behaves as [f e].
   *)
 
-val catch_lift : (unit -> 'a behavior) -> ?eq:('a -> 'a -> bool) -> (exn -> 'a) -> 'a behavior
+val catch_lift : ?eq:('a -> 'a -> bool) -> (unit -> 'a behavior) -> (exn -> 'a) -> 'a behavior
   (**
      [catch_lift b ?eq f] is equivalent to [catch b (fun e -> return
      ?eq (f e))], but is slightly more efficient.
   *)
 
-val try_bind : (unit -> 'a behavior) -> ('a -> 'b behavior) -> (exn -> 'b behavior) -> 'b behavior
+val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a behavior) -> ('a -> 'b behavior) -> (exn -> 'b behavior) -> 'b behavior
   (**
      [try_bind b f g] behaves as [bind (b()) f] if [b()] succeeds. If
      [b()] fails with exception [e], [try_bind b f g] behaves as [g
      e].
   *)
 
-val try_bind_lift : (unit -> 'a behavior) -> ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> (exn -> 'b) -> 'b behavior
+val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a behavior) -> ('a -> 'b) -> (exn -> 'b) -> 'b behavior
   (**
      [try_bind_lift b ?eq f g] is equivalent to [try_bind b (fun v ->
      return ?eq (f v)) (fun e -> return ?eq (g e))], but is slightly
@@ -237,17 +237,18 @@ val memo :
 
 (** {2 Variations} *)
 
-val bindN : 'a behavior list -> ('a list -> 'b behavior) -> 'b behavior
-val bliftN : 'a behavior list -> ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'b behavior
+val bindN : ?eq:('b -> 'b -> bool) -> 'a behavior list -> ('a list -> 'b behavior) -> 'b behavior
+val bliftN : ?eq:('b -> 'b -> bool) -> 'a behavior list -> ('a list -> 'b) -> 'b behavior
 val liftN : ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'a behavior list -> 'b behavior
 
 val bind2 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 behavior -> 'a2 behavior ->
   ('a1 -> 'a2 -> 'b behavior) ->
   'b behavior
 val blift2 :
-  'a1 behavior -> 'a2 behavior ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 behavior -> 'a2 behavior ->
   ('a1 -> 'a2 -> 'b) ->
   'b behavior
 val lift2 :
@@ -257,12 +258,13 @@ val lift2 :
   'b behavior
 
 val bind3 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 behavior -> 'a2 behavior -> 'a3 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'b behavior) ->
   'b behavior
 val blift3 :
-  'a1 behavior -> 'a2 behavior -> 'a3 behavior ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 behavior -> 'a2 behavior -> 'a3 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'b) ->
   'b behavior
 val lift3 :
@@ -272,12 +274,13 @@ val lift3 :
   'b behavior
 
 val bind4 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b behavior) ->
   'b behavior
 val blift4 :
-  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b) ->
   'b behavior
 val lift4 :
@@ -287,12 +290,13 @@ val lift4 :
   'b behavior
 
 val bind5 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b behavior) ->
   'b behavior
 val blift5 :
-  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b) ->
   'b behavior
 val lift5 :
@@ -302,12 +306,13 @@ val lift5 :
   'b behavior
 
 val bind6 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior -> 'a6 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b behavior) ->
   'b behavior
 val blift6 :
-  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior -> 'a6 behavior ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior -> 'a6 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b) ->
   'b behavior
 val lift6 :
@@ -317,12 +322,13 @@ val lift6 :
   'b behavior
 
 val bind7 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior -> 'a6 behavior -> 'a7 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b behavior) ->
   'b behavior
 val blift7 :
-  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior -> 'a6 behavior -> 'a7 behavior ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 behavior -> 'a2 behavior -> 'a3 behavior -> 'a4 behavior -> 'a5 behavior -> 'a6 behavior -> 'a7 behavior ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b) ->
   'b behavior
 val lift7 :

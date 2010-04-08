@@ -60,7 +60,7 @@ val fail : exn -> 'a t
      [fail e] is a changeable that fails with the exception [e].
   *)
 
-val bind : 'a t -> ('a -> 'b t) -> 'b t
+val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t
   (**
      [bind c f] behaves as [f] applied to the value of [c]. If [c]
      fails, [bind c f] also fails, with the same exception.
@@ -74,7 +74,7 @@ val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
      [c >>= f] is an alternative notation for [bind c f].
   *)
 
-val blift : 'a t -> ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'b t
+val blift : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b) -> 'b t
   (**
      [blift c ?eq f] is equivalent to [bind c (fun v -> return ?eq (f
      v))], but is slightly more efficient.
@@ -87,26 +87,26 @@ val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a t -> 'b t
      binding it to a changeable.
   *)
 
-val catch : (unit -> 'a t) -> (exn -> 'a t) -> 'a t
+val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a t) -> 'a t
   (**
      [catch c f] behaves the same as [c()] if [c()] succeeds. If [c()]
      fails with some exception [e], [catch c f] behaves as [f e].
   *)
 
-val catch_lift : (unit -> 'a t) -> ?eq:('a -> 'a -> bool) -> (exn -> 'a) -> 'a t
+val catch_lift : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a) -> 'a t
   (**
      [catch_lift c ?eq f] is equivalent to [catch c (fun e -> return
      ?eq (f e))], but is slightly more efficient.
   *)
 
-val try_bind : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
+val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
   (**
      [try_bind c f g] behaves as [bind (c()) f] if [c()] succeeds. If
      [c()] fails with exception [e], [try_bind c f g] behaves as [g
      e].
   *)
 
-val try_bind_lift : (unit -> 'a t) -> ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> (exn -> 'b) -> 'b t
+val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b) -> (exn -> 'b) -> 'b t
   (**
      [try_bind_lift c ?eq f g] is equivalent to [try_bind c (fun v ->
      return ?eq (f v)) (fun e -> return ?eq (g e))], but is slightly
@@ -145,17 +145,18 @@ val memo :
 
 (** {2 Variations} *)
 
-val bindN : 'a t list -> ('a list -> 'b t) -> 'b t
-val bliftN : 'a t list -> ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'b t
+val bindN : ?eq:('b -> 'b -> bool) -> 'a t list -> ('a list -> 'b t) -> 'b t
+val liftN : ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'a t list -> 'b t
 val liftN : ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'a t list -> 'b t
 
 val bind2 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t ->
   ('a1 -> 'a2 -> 'b t) ->
   'b t
 val blift2 :
-  'a1 t -> 'a2 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t ->
   ('a1 -> 'a2 -> 'b) ->
   'b t
 val lift2 :
@@ -165,12 +166,13 @@ val lift2 :
   'b t
 
 val bind3 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t ->
   ('a1 -> 'a2 -> 'a3 -> 'b t) ->
   'b t
 val blift3 :
-  'a1 t -> 'a2 t -> 'a3 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t ->
   ('a1 -> 'a2 -> 'a3 -> 'b) ->
   'b t
 val lift3 :
@@ -180,12 +182,13 @@ val lift3 :
   'b t
 
 val bind4 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b t) ->
   'b t
 val blift4 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b) ->
   'b t
 val lift4 :
@@ -195,12 +198,13 @@ val lift4 :
   'b t
 
 val bind5 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b t) ->
   'b t
 val blift5 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b) ->
   'b t
 val lift5 :
@@ -210,12 +214,13 @@ val lift5 :
   'b t
 
 val bind6 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b t) ->
   'b t
 val blift6 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b) ->
   'b t
 val lift6 :
@@ -225,12 +230,13 @@ val lift6 :
   'b t
 
 val bind7 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b t) ->
   'b t
 val blift7 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b) ->
   'b t
 val lift7 :

@@ -25,15 +25,15 @@ type 'a t
 val return : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
 val fail : exn -> 'a t
 
-val bind : 'a t -> ('a -> 'b t) -> 'b t
+val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t
 val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
 val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a t -> 'b t 
-val blift : 'a t -> ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'b t
+val blift : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b) -> 'b t
 
-val catch : (unit -> 'a t) -> (exn -> 'a t) -> 'a t
-val try_bind : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-val catch_lift : (unit -> 'a t) -> ?eq:('a -> 'a -> bool) -> (exn -> 'a) -> 'a t
-val try_bind_lift : (unit -> 'a t) -> ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> (exn -> 'b) -> 'b t
+val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a t) -> 'a t
+val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
+val catch_lift : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a) -> 'a t
+val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b) -> (exn -> 'b) -> 'b t
 
 type 'a result = Value of 'a | Fail of exn
 
@@ -59,6 +59,7 @@ val memo :
   ('a -> 'b)
 
 val bind2 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t ->
   ('a1 -> 'a2 -> 'b t) ->
   'b t
@@ -68,12 +69,13 @@ val lift2 :
   'a1 t -> 'a2 t ->
   'b t
 val blift2 :
-  'a1 t -> 'a2 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t ->
   ('a1 -> 'a2 -> 'b) ->
   'b t
 
 val bind3 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t ->
   ('a1 -> 'a2 -> 'a3 -> 'b t) ->
   'b t
@@ -83,12 +85,13 @@ val lift3 :
   'a1 t -> 'a2 t -> 'a3 t ->
   'b t
 val blift3 :
-  'a1 t -> 'a2 t -> 'a3 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t ->
   ('a1 -> 'a2 -> 'a3 -> 'b) ->
   'b t
 
 val bind4 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b t) ->
   'b t
@@ -98,12 +101,13 @@ val lift4 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   'b t
 val blift4 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b) ->
   'b t
 
 val bind5 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b t) ->
   'b t
@@ -113,12 +117,13 @@ val lift5 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   'b t
 val blift5 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b) ->
   'b t
 
 val bind6 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b t) ->
   'b t
@@ -128,12 +133,13 @@ val lift6 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   'b t
 val blift6 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b) ->
   'b t
 
 val bind7 :
+  ?eq:('b -> 'b -> bool) ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b t) ->
   'b t
@@ -143,11 +149,11 @@ val lift7 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   'b t
 val blift7 :
-  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   ?eq:('b -> 'b -> bool) ->
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b) ->
   'b t
 
-val bindN : 'a t list -> ('a list -> 'b t) -> 'b t
+val bindN : ?eq:('b -> 'b -> bool) -> 'a t list -> ('a list -> 'b t) -> 'b t
 val liftN : ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'a t list -> 'b t
-val bliftN : 'a t list -> ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'b t
+val bliftN : ?eq:('b -> 'b -> bool) -> 'a t list -> ('a list -> 'b) -> 'b t

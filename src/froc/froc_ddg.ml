@@ -151,9 +151,7 @@ let connect t t' =
   f ();
   notify t' f
 
-let never_eq _ _ = false
-
-let bind_gen assign ?eq f t =
+let bind_gen ?eq assign f t =
   let res = make ?eq () in
   add_reader t (fun () ->
     match t.state with
@@ -161,12 +159,12 @@ let bind_gen assign ?eq f t =
       | Value v -> try assign res (f v) with e -> write_exn res e);
   res
 
-let bind t f = bind_gen connect ~eq:never_eq f t
-let (>>=) = bind
-let lift ?eq f = bind_gen write ?eq f
-let blift t ?eq f = lift ?eq f t
+let bind ?eq t f = bind_gen ?eq connect f t
+let (>>=) t f = bind t f
+let lift ?eq f = bind_gen ?eq write f
+let blift ?eq t f = lift ?eq f t
 
-let try_bind_gen assign f ?eq succ err =
+let try_bind_gen ?eq assign f succ err =
   let t = try f () with e -> fail e in
   let res = make ?eq () in
   add_reader t (fun () ->
@@ -174,10 +172,10 @@ let try_bind_gen assign f ?eq succ err =
     with e -> write_exn res e);
   res
 
-let try_bind f succ err = try_bind_gen connect f ~eq:never_eq succ err
-let try_bind_lift f ?eq succ err = try_bind_gen write f ?eq succ err
+let try_bind ?eq f succ err = try_bind_gen ?eq connect f succ err
+let try_bind_lift ?eq f succ err = try_bind_gen ?eq write f succ err
 
-let catch_gen assign f ?eq err =
+let catch_gen ?eq assign f err =
   let t = try f () with e -> fail e in
   let res = make ?eq () in
   add_reader t (fun () ->
@@ -186,8 +184,8 @@ let catch_gen assign f ?eq err =
       | Fail e -> try assign res (err e) with e -> write_exn res e);
   res
 
-let catch f err = catch_gen connect f ~eq:never_eq err
-let catch_lift f ?eq err = catch_gen write f ?eq err
+let catch ?eq f err = catch_gen ?eq connect f err
+let catch_lift ?eq f err = catch_gen write ?eq f err
 
 let finish = Stack.create ()
 
@@ -246,7 +244,7 @@ let memo ?size ?hash ?eq () =
         result in
     match result with Value v -> v | Fail e -> raise e
 
-let bind2_gen assign ?eq f t1 t2 =
+let bind2_gen ?eq assign f t1 t2 =
   let res = make ?eq () in
   let read () =
     match t1.state, t2.state with
@@ -262,11 +260,11 @@ let bind2_gen assign ?eq f t1 t2 =
   add_dep start t2 (enqueue r);
   res
 
-let bind2 t1 t2 f = bind2_gen connect ~eq:never_eq f t1 t2
-let lift2 ?eq f = bind2_gen write ?eq f
-let blift2 t1 t2 ?eq f = lift2 ?eq f t1 t2
+let bind2 ?eq t1 t2 f = bind2_gen ?eq connect f t1 t2
+let lift2 ?eq f = bind2_gen ?eq write f
+let blift2 ?eq t1 t2 f = lift2 ?eq f t1 t2
 
-let bind3_gen assign ?eq f t1 t2 t3 =
+let bind3_gen ?eq assign f t1 t2 t3 =
   let res = make ?eq () in
   let read () =
     match t1.state, t2.state, t3.state with
@@ -284,11 +282,11 @@ let bind3_gen assign ?eq f t1 t2 t3 =
   add_dep start t3 (enqueue r);
   res
 
-let bind3 t1 t2 t3 f = bind3_gen connect ~eq:never_eq f t1 t2 t3
-let lift3 ?eq f = bind3_gen write ?eq f
-let blift3 t1 t2 t3 ?eq f = lift3 ?eq f t1 t2 t3
+let bind3 ?eq t1 t2 t3 f = bind3_gen ?eq connect f t1 t2 t3
+let lift3 ?eq f = bind3_gen ?eq write f
+let blift3 ?eq t1 t2 t3 f = lift3 ?eq f t1 t2 t3
 
-let bind4_gen assign ?eq f t1 t2 t3 t4 =
+let bind4_gen ?eq assign f t1 t2 t3 t4 =
   let res = make ?eq () in
   let read () =
     match t1.state, t2.state, t3.state, t4.state with
@@ -308,11 +306,11 @@ let bind4_gen assign ?eq f t1 t2 t3 t4 =
   add_dep start t4 (enqueue r);
   res
 
-let bind4 t1 t2 t3 t4 f = bind4_gen connect ~eq:never_eq f t1 t2 t3 t4
-let lift4 ?eq f = bind4_gen write ?eq f
-let blift4 t1 t2 t3 t4 ?eq f = lift4 ?eq f t1 t2 t3 t4
+let bind4 ?eq t1 t2 t3 t4 f = bind4_gen ?eq connect f t1 t2 t3 t4
+let lift4 ?eq f = bind4_gen ?eq write f
+let blift4 ?eq t1 t2 t3 t4 f = lift4 ?eq f t1 t2 t3 t4
 
-let bind5_gen assign ?eq f t1 t2 t3 t4 t5 =
+let bind5_gen ?eq assign f t1 t2 t3 t4 t5 =
   let res = make ?eq () in
   let read () =
     match t1.state, t2.state, t3.state, t4.state, t5.state with
@@ -334,11 +332,11 @@ let bind5_gen assign ?eq f t1 t2 t3 t4 t5 =
   add_dep start t5 (enqueue r);
   res
 
-let bind5 t1 t2 t3 t4 t5 f = bind5_gen connect ~eq:never_eq f t1 t2 t3 t4 t5
-let lift5 ?eq f = bind5_gen write ?eq f
-let blift5 t1 t2 t3 t4 t5 ?eq f = lift5 ?eq f t1 t2 t3 t4 t5
+let bind5 ?eq t1 t2 t3 t4 t5 f = bind5_gen ?eq connect f t1 t2 t3 t4 t5
+let lift5 ?eq f = bind5_gen ?eq write f
+let blift5 ?eq t1 t2 t3 t4 t5 f = lift5 ?eq f t1 t2 t3 t4 t5
 
-let bind6_gen assign ?eq f t1 t2 t3 t4 t5 t6 =
+let bind6_gen ?eq assign f t1 t2 t3 t4 t5 t6 =
   let res = make ?eq () in
   let read () =
     match t1.state, t2.state, t3.state, t4.state, t5.state, t6.state with
@@ -362,11 +360,11 @@ let bind6_gen assign ?eq f t1 t2 t3 t4 t5 t6 =
   add_dep start t6 (enqueue r);
   res
 
-let bind6 t1 t2 t3 t4 t5 t6 f = bind6_gen connect ~eq:never_eq f t1 t2 t3 t4 t5 t6
-let lift6 ?eq f = bind6_gen write ?eq f
-let blift6 t1 t2 t3 t4 t5 t6 ?eq f = lift6 ?eq f t1 t2 t3 t4 t5 t6
+let bind6 ?eq t1 t2 t3 t4 t5 t6 f = bind6_gen ?eq connect f t1 t2 t3 t4 t5 t6
+let lift6 ?eq f = bind6_gen ?eq write f
+let blift6 ?eq t1 t2 t3 t4 t5 t6 f = lift6 ?eq f t1 t2 t3 t4 t5 t6
 
-let bind7_gen assign ?eq f t1 t2 t3 t4 t5 t6 t7 =
+let bind7_gen ?eq assign f t1 t2 t3 t4 t5 t6 t7 =
   let res = make ?eq () in
   let read () =
     match t1.state, t2.state, t3.state, t4.state, t5.state, t6.state, t7.state with
@@ -392,11 +390,11 @@ let bind7_gen assign ?eq f t1 t2 t3 t4 t5 t6 t7 =
   add_dep start t7 (enqueue r);
   res
 
-let bind7 t1 t2 t3 t4 t5 t6 t7 f = bind7_gen connect ~eq:never_eq f t1 t2 t3 t4 t5 t6 t7
-let lift7 ?eq f = bind7_gen write ?eq f
-let blift7 t1 t2 t3 t4 t5 t6 t7 ?eq f = lift7 ?eq f t1 t2 t3 t4 t5 t6 t7
+let bind7 ?eq t1 t2 t3 t4 t5 t6 t7 f = bind7_gen ?eq connect f t1 t2 t3 t4 t5 t6 t7
+let lift7 ?eq f = bind7_gen ?eq write f
+let blift7 ?eq t1 t2 t3 t4 t5 t6 t7 f = lift7 ?eq f t1 t2 t3 t4 t5 t6 t7
 
-let bindN_gen assign ?eq f ts =
+let bindN_gen ?eq assign f ts =
   let res = make ?eq () in
   let read () =
     try
@@ -412,6 +410,6 @@ let bindN_gen assign ?eq f ts =
   List.iter (fun t -> add_dep start t (enqueue r)) ts;
   res
 
-let bindN ts f = bindN_gen connect ~eq:never_eq f ts
-let liftN ?eq f = bindN_gen write ?eq f
-let bliftN ts ?eq f = liftN ?eq f ts
+let bindN ?eq ts f = bindN_gen ?eq connect f ts
+let liftN ?eq f = bindN_gen ?eq write f
+let bliftN ?eq ts f = liftN ?eq f ts
