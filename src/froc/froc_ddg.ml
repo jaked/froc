@@ -38,15 +38,15 @@ type 'a changeable = {
   mutable deps : ('a result -> unit) Dlist.t;
 }
 
+type 'a repr = Constant of 'a result | Changeable of 'a changeable
+
 type +'a t
 type -'a u
 
-type 'a repr = Constant of 'a result | Changeable of 'a changeable
-
 external t_of_repr : 'a repr -> 'a t = "%identity"
 external repr_of_t : 'a t -> 'a repr = "%identity"
-external u_of_repr : 'a repr -> 'a u = "%identity"
-external repr_of_u : 'a u -> 'a repr = "%identity"
+external u_of_changeable : 'a changeable -> 'a u = "%identity"
+external changeable_of_u : 'a u -> 'a changeable = "%identity"
 
 let total_eq v1 v2 = try compare v1 v2 = 0 with _ -> false
 
@@ -56,13 +56,12 @@ let make_changeable
     ?(eq = total_eq)
     ?(result = Fail Unset)
     () =
-  let r =
-    Changeable {
-      eq = eq;
-      state = result;
-      deps = Dlist.empty ();
-    } in
-  t_of_repr r, u_of_repr r
+  let c = {
+    eq = eq;
+    state = result;
+    deps = Dlist.empty ();
+  } in
+  t_of_repr (Changeable c), u_of_changeable c
 
 let make_constant result = t_of_repr (Constant result)
 
@@ -71,29 +70,25 @@ let return v = make_constant (Value v)
 let fail e = make_constant (Fail e)
 
 let write_result u r =
-  match repr_of_u u with
-    | Constant _ -> assert false
-    | Changeable c ->
-        let eq =
-          match c.state, r with
-            | Value v1, Value v2 -> c.eq v1 v2
-            | Fail e1, Fail e2 -> e1 == e2 (* XXX ? *)
-            | _ -> false in
-        if not eq
-        then begin
-          c.state <- r;
-          Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
-        end
+  let c = changeable_of_u u in
+  let eq =
+    match c.state, r with
+      | Value v1, Value v2 -> c.eq v1 v2
+      | Fail e1, Fail e2 -> e1 == e2 (* XXX ? *)
+      | _ -> false in
+  if not eq
+  then begin
+    c.state <- r;
+    Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
+  end
 
 let write_result_no_eq u r =
-  match repr_of_u u with
-    | Constant _ -> assert false
-    | Changeable c ->
-        c.state <- r;
-        Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
+  let c = changeable_of_u u in
+  c.state <- r;
+  Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
 
-let write t v = write_result t (Value v)
-let write_exn t e = write_result t (Fail e)
+let write u v = write_result u (Value v)
+let write_exn u e = write_result u (Fail e)
 
 let read_result t =
   match repr_of_t t with
