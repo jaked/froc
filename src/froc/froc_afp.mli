@@ -44,9 +44,9 @@ val init : unit -> unit
 type 'a t
     (** Type of changeables of type ['a]. *)
 
-val return : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
+val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
   (**
-     [return v] is a changeable with initial value [v].
+     [changeable v] is a changeable with initial value [v].
 
      The optional [eq] argument gives an equality function; a
      changeable is considered changed (and its dependencies notified)
@@ -55,9 +55,16 @@ val return : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
      values are always not equal).
   *)
 
+val return : 'a -> 'a t
+  (**
+     [return v] is a constant changeable with value [v].
+
+     It is a runtime error if you try to change it.
+  *)
+
 val fail : exn -> 'a t
   (**
-     [fail e] is a changeable that fails with the exception [e].
+     [fail e] is a constant changeable that fails with the exception [e].
   *)
 
 val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t

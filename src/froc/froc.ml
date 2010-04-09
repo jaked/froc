@@ -133,7 +133,7 @@ let notify_b = notify
 let switch bb = bb >>= fun b -> b
 
 let hold_result ?eq init e =
-  let b = make ?eq ~result:init () in
+  let b = make_changeable ?eq ~result:init () in
   notify_e e (write_result b);
   b
 

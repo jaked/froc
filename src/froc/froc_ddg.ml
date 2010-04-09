@@ -32,54 +32,69 @@ let set_exn_handler h = handle_exn := h
 
 type 'a result = Value of 'a | Fail of exn
 
-type 'a t = {
+type 'a changeable = {
   eq : 'a -> 'a -> bool;
   mutable state : 'a result;
   mutable deps : ('a result -> unit) Dlist.t;
 }
 
+type 'a t = Constant of 'a result | Changeable of 'a changeable
+
 let total_eq v1 v2 = try compare v1 v2 = 0 with _ -> false
 
 exception Unset
 
-let make
+let make_changeable
     ?(eq = total_eq)
     ?(result = Fail Unset)
-    () = {
-  eq = eq;
-  state = result;
-  deps = Dlist.empty ();
-}
+    () =
+  Changeable {
+    eq = eq;
+    state = result;
+    deps = Dlist.empty ();
+  }
 
-let return ?eq v = make ?eq ~result:(Value v) ()
-let fail e = make ~result:(Fail e) ()
+let make_constant result = Constant result
+
+let changeable ?eq v = make_changeable ?eq ~result:(Value v) ()
+let return v = make_constant (Value v)
+let fail e = make_constant (Fail e)
 
 let write_result t r =
-  let eq =
-    match t.state, r with
-      | Value v1, Value v2 -> t.eq v1 v2
-      | Fail e1, Fail e2 -> e1 == e2 (* XXX ? *)
-      | _ -> false in
-  if not eq
-  then begin
-    t.state <- r;
-    Dlist.iter (fun f -> try f r with e -> !handle_exn e) t.deps
-  end
+  match t with
+    | Constant _ -> invalid_arg "can't change a constant"
+    | Changeable c ->
+        let eq =
+          match c.state, r with
+            | Value v1, Value v2 -> c.eq v1 v2
+            | Fail e1, Fail e2 -> e1 == e2 (* XXX ? *)
+            | _ -> false in
+        if not eq
+        then begin
+          c.state <- r;
+          Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
+        end
 
 let write t v = write_result t (Value v)
 let write_exn t e = write_result t (Fail e)
 
-let read_result t = t.state
+let read_result t =
+  match t with
+    | Constant c -> c
+    | Changeable c -> c.state
 
 let read t =
-  match t.state with
+  match read_result t with
     | Value v -> v
     | Fail e -> raise e
 
 let add_dep ts t dep =
-  let dl = Dlist.add_after t.deps dep in
-  let cancel () = Dlist.remove dl in
-  TS.add_cleanup ts cancel
+  match t with
+    | Constant _ -> ()
+    | Changeable c ->
+        let dl = Dlist.add_after c.deps dep in
+        let cancel () = Dlist.remove dl in
+        TS.add_cleanup ts cancel
 
 let notify t f =
   add_dep (TS.tick ()) t f
@@ -147,14 +162,14 @@ let add_reader t read =
   add_dep start t (enqueue r)
 
 let connect t t' =
-  let f _ = write_result t t'.state in
+  let f _ = write_result t (read_result t') in
   f ();
   notify t' f
 
 let bind_gen ?eq assign f t =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   add_reader t (fun () ->
-    match t.state with
+    match read_result t with
       | Fail e -> write_exn res e
       | Value v -> try assign res (f v) with e -> write_exn res e);
   res
@@ -166,9 +181,9 @@ let blift ?eq t f = lift ?eq f t
 
 let try_bind_gen ?eq assign f succ err =
   let t = try f () with e -> fail e in
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   add_reader t (fun () ->
-    try assign res (match t.state with Value v -> succ v | Fail e -> err e)
+    try assign res (match read_result t with Value v -> succ v | Fail e -> err e)
     with e -> write_exn res e);
   res
 
@@ -177,10 +192,10 @@ let try_bind_lift ?eq f succ err = try_bind_gen ?eq write f succ err
 
 let catch_gen ?eq assign f err =
   let t = try f () with e -> fail e in
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   add_reader t (fun () ->
-    match t.state with
-      | Value v -> write_result res t.state
+    match read_result t with
+      | Value _ as r -> write_result res r
       | Fail e -> try assign res (err e) with e -> write_exn res e);
   res
 
@@ -245,9 +260,9 @@ let memo ?size ?hash ?eq () =
     match result with Value v -> v | Fail e -> raise e
 
 let bind2_gen ?eq assign f t1 t2 =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   let read () =
-    match t1.state, t2.state with
+    match read_result t1, read_result t2 with
       | Fail e, _
       | _, Fail e -> write_exn res e
       | Value v1, Value v2 ->
@@ -265,9 +280,9 @@ let lift2 ?eq f = bind2_gen ?eq write f
 let blift2 ?eq t1 t2 f = lift2 ?eq f t1 t2
 
 let bind3_gen ?eq assign f t1 t2 t3 =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   let read () =
-    match t1.state, t2.state, t3.state with
+    match read_result t1, read_result t2, read_result t3 with
       | Fail e, _, _
       | _, Fail e, _
       | _, _, Fail e -> write_exn res e
@@ -287,9 +302,9 @@ let lift3 ?eq f = bind3_gen ?eq write f
 let blift3 ?eq t1 t2 t3 f = lift3 ?eq f t1 t2 t3
 
 let bind4_gen ?eq assign f t1 t2 t3 t4 =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   let read () =
-    match t1.state, t2.state, t3.state, t4.state with
+    match read_result t1, read_result t2, read_result t3, read_result t4 with
       | Fail e, _, _, _
       | _, Fail e, _, _
       | _, _, Fail e, _
@@ -311,9 +326,9 @@ let lift4 ?eq f = bind4_gen ?eq write f
 let blift4 ?eq t1 t2 t3 t4 f = lift4 ?eq f t1 t2 t3 t4
 
 let bind5_gen ?eq assign f t1 t2 t3 t4 t5 =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   let read () =
-    match t1.state, t2.state, t3.state, t4.state, t5.state with
+    match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5 with
       | Fail e, _, _, _, _
       | _, Fail e, _, _, _
       | _, _, Fail e, _, _
@@ -337,9 +352,9 @@ let lift5 ?eq f = bind5_gen ?eq write f
 let blift5 ?eq t1 t2 t3 t4 t5 f = lift5 ?eq f t1 t2 t3 t4 t5
 
 let bind6_gen ?eq assign f t1 t2 t3 t4 t5 t6 =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   let read () =
-    match t1.state, t2.state, t3.state, t4.state, t5.state, t6.state with
+    match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6 with
       | Fail e, _, _, _, _, _
       | _, Fail e, _, _, _, _
       | _, _, Fail e, _, _, _
@@ -365,9 +380,9 @@ let lift6 ?eq f = bind6_gen ?eq write f
 let blift6 ?eq t1 t2 t3 t4 t5 t6 f = lift6 ?eq f t1 t2 t3 t4 t5 t6
 
 let bind7_gen ?eq assign f t1 t2 t3 t4 t5 t6 t7 =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   let read () =
-    match t1.state, t2.state, t3.state, t4.state, t5.state, t6.state, t7.state with
+    match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6, read_result t7 with
       | Fail e, _, _, _, _, _, _
       | _, Fail e, _, _, _, _, _
       | _, _, Fail e, _, _, _, _
@@ -395,13 +410,10 @@ let lift7 ?eq f = bind7_gen ?eq write f
 let blift7 ?eq t1 t2 t3 t4 t5 t6 t7 f = lift7 ?eq f t1 t2 t3 t4 t5 t6 t7
 
 let bindN_gen ?eq assign f ts =
-  let res = make ?eq () in
+  let res = make_changeable ?eq () in
   let read () =
     try
-      let vs =
-        List.map
-          (fun t -> match t.state with Value v -> v | Fail e -> raise e)
-          ts in
+      let vs = List.map read ts in
       assign res (f vs)
     with e -> write_exn res e in
   let start = TS.tick () in

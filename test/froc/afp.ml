@@ -11,9 +11,9 @@ let tests = "Afp" >::: [
     let assert_adds n = assert_equal ~printer:string_of_int n !adds in
     let assert_muls n = assert_equal ~printer:string_of_int n !muls in
 
-    let x = return 5 in
-    let y = return 6 in
-    let z = return 7 in
+    let x = changeable 5 in
+    let y = changeable 6 in
+    let z = changeable 7 in
     let w = x + y * z in
     let assert_w n = assert_equal ~printer:string_of_int n (read w) in
 
@@ -54,10 +54,10 @@ let tests = "Afp" >::: [
               length l >>= fun len -> return (len + 1) in
     let assert_lengths n = assert_equal ~printer:string_of_int n !lengths in
 
-    let l3 = return L.Nil in
-    let l2 = return (L.Cons (2, l3)) in
-    let l1 = return (L.Cons (1, l2)) in
-    let l0 = return (L.Cons (0, l1)) in
+    let l3 = changeable L.Nil in
+    let l2 = changeable (L.Cons (2, l3)) in
+    let l1 = changeable (L.Cons (1, l2)) in
+    let l0 = changeable (L.Cons (0, l1)) in
 
     let len = length l0 in
     let assert_len n = assert_equal ~printer:string_of_int n (read len) in
@@ -72,7 +72,7 @@ let tests = "Afp" >::: [
     assert_lengths 1;
 
     lengths := 0;
-    let l4 = return (L.Cons (4, l1)) in
+    let l4 = changeable (L.Cons (4, l1)) in
     write l0 (L.Cons (0, l4));
     propagate ();
     assert_len 3;
@@ -97,10 +97,10 @@ let tests = "Afp" >::: [
     let length l = memo length l in
     let assert_lengths n = assert_equal ~printer:string_of_int n !lengths in
 
-    let l3 = return L.Nil in
-    let l2 = return (L.Cons (2, l3)) in
-    let l1 = return (L.Cons (1, l2)) in
-    let l0 = return (L.Cons (0, l1)) in
+    let l3 = changeable L.Nil in
+    let l2 = changeable (L.Cons (2, l3)) in
+    let l1 = changeable (L.Cons (1, l2)) in
+    let l0 = changeable (L.Cons (0, l1)) in
 
     let len = length l0 in
     let assert_len n = assert_equal ~printer:string_of_int n (read len) in
@@ -110,7 +110,7 @@ let tests = "Afp" >::: [
 
     lengths := 0;
     write l1 (L.Cons (1, l3));
-    let l4 = return (L.Cons (4, l1)) in
+    let l4 = changeable (L.Cons (4, l1)) in
     write l0 (L.Cons (0, l4));
     propagate ();
     assert_len 3;

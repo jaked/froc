@@ -22,7 +22,8 @@
 
 type 'a t
 
-val return : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
+val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
+val return : 'a -> 'a t
 val fail : exn -> 'a t
 
 val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t
@@ -46,7 +47,8 @@ val write_result : 'a t -> 'a result -> unit
 val notify : 'a t -> ('a result -> unit) -> unit
 val cleanup : (unit -> unit) -> unit
 
-val make : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t
+val make_changeable : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t
+val make_constant : 'a result -> 'a t
 
 val init : unit -> unit
 val propagate : unit -> unit

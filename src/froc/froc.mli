@@ -56,20 +56,14 @@ type 'a behavior
 (** Type of values of type ['a] or exception. *)
 type 'a result = Value of 'a | Fail of exn
 
-val return : ?eq:('a -> 'a -> bool) -> 'a -> 'a behavior
+val return : 'a -> 'a behavior
   (**
-     [return e] is a behavior whose result is [e].
-
-     The optional [eq] argument gives an equality function; a
-     behavior's value is considered changed (and its dependencies
-     notified) only if its new value is not [eq] to its old one. The
-     default equality holds iff the values [compare] to [0]
-     (incomparable values are always not equal).
+     [constant v] is a constant behavior with value [v].
   *)
 
 val fail : exn -> 'a behavior
   (**
-     [fail e] is a behavior that fails with the exception [e].
+     [fail e] is a constant behavior that fails with the exception [e].
   *)
 
 val bind : ?eq:('b -> 'b -> bool) -> 'a behavior -> ('a -> 'b behavior) -> 'b behavior
