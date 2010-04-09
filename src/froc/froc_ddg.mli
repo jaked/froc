@@ -20,9 +20,10 @@
 
 (** Dynamic dependency graph underlying [Froc] and [Froc_afp]. *)
 
-type 'a t
+type +'a t
+type -'a u
 
-val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
+val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t * 'a u
 val return : 'a -> 'a t
 val fail : exn -> 'a t
 
@@ -40,14 +41,14 @@ type 'a result = Value of 'a | Fail of exn
 
 val read : 'a t -> 'a
 val read_result : 'a t -> 'a result
-val write : 'a t -> 'a -> unit
-val write_exn : 'a t -> exn -> unit
-val write_result : 'a t -> 'a result -> unit
+val write : 'a u -> 'a -> unit
+val write_exn : 'a u -> exn -> unit
+val write_result : 'a u -> 'a result -> unit
 
 val notify : 'a t -> ('a result -> unit) -> unit
 val cleanup : (unit -> unit) -> unit
 
-val make_changeable : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t
+val make_changeable : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t * 'a u
 val make_constant : 'a result -> 'a t
 
 val init : unit -> unit

@@ -41,10 +41,12 @@ val init : unit -> unit
 
 (** {2 Changeables} *)
 
-type 'a t
+type +'a t
     (** Type of changeables of type ['a]. *)
+type -'a u
+    (** Type of writeables of type ['a]. *)
 
-val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t
+val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t * 'a u
   (**
      [changeable v] is a changeable with initial value [v].
 
@@ -128,13 +130,13 @@ val read : 'a t -> 'a
      might get a stale result.
   *)
 
-val write : 'a t -> 'a -> unit
+val write : 'a u -> 'a -> unit
   (**
      [write c v] updates the value of [c]. Changeables that depend on
      [c] will not be consistent until you call [propagate].
   *)
 
-val write_exn : 'a t -> exn -> unit
+val write_exn : 'a u -> exn -> unit
   (**
      [write_exn c e] updates [c] to fail with exception
      [e]. Changeables that depend on [c] will not be consistent until

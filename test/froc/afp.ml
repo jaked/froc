@@ -11,9 +11,9 @@ let tests = "Afp" >::: [
     let assert_adds n = assert_equal ~printer:string_of_int n !adds in
     let assert_muls n = assert_equal ~printer:string_of_int n !muls in
 
-    let x = changeable 5 in
-    let y = changeable 6 in
-    let z = changeable 7 in
+    let x, xw = changeable 5 in
+    let y, yw = changeable 6 in
+    let z, zw = changeable 7 in
     let w = x + y * z in
     let assert_w n = assert_equal ~printer:string_of_int n (read w) in
 
@@ -23,7 +23,7 @@ let tests = "Afp" >::: [
 
     adds := 0;
     muls := 0;
-    write x 6;
+    write xw 6;
     propagate ();
     assert_w 48;
     assert_adds 1;
@@ -31,7 +31,7 @@ let tests = "Afp" >::: [
 
     adds := 0;
     muls := 0;
-    write y 5;
+    write yw 5;
     propagate ();
     assert_w 41;
     assert_adds 1;
@@ -54,10 +54,10 @@ let tests = "Afp" >::: [
               length l >>= fun len -> return (len + 1) in
     let assert_lengths n = assert_equal ~printer:string_of_int n !lengths in
 
-    let l3 = changeable L.Nil in
-    let l2 = changeable (L.Cons (2, l3)) in
-    let l1 = changeable (L.Cons (1, l2)) in
-    let l0 = changeable (L.Cons (0, l1)) in
+    let l3, l3w = changeable L.Nil in
+    let l2, l2w = changeable (L.Cons (2, l3)) in
+    let l1, l1w = changeable (L.Cons (1, l2)) in
+    let l0, l0w = changeable (L.Cons (0, l1)) in
 
     let len = length l0 in
     let assert_len n = assert_equal ~printer:string_of_int n (read len) in
@@ -66,14 +66,14 @@ let tests = "Afp" >::: [
     assert_lengths 4;
 
     lengths := 0;
-    write l2 L.Nil;
+    write l2w L.Nil;
     propagate ();
     assert_len 2;
     assert_lengths 1;
 
     lengths := 0;
-    let l4 = changeable (L.Cons (4, l1)) in
-    write l0 (L.Cons (0, l4));
+    let l4, l4w = changeable (L.Cons (4, l1)) in
+    write l0w (L.Cons (0, l4));
     propagate ();
     assert_len 3;
     assert_lengths 4
@@ -97,10 +97,10 @@ let tests = "Afp" >::: [
     let length l = memo length l in
     let assert_lengths n = assert_equal ~printer:string_of_int n !lengths in
 
-    let l3 = changeable L.Nil in
-    let l2 = changeable (L.Cons (2, l3)) in
-    let l1 = changeable (L.Cons (1, l2)) in
-    let l0 = changeable (L.Cons (0, l1)) in
+    let l3, l3w = changeable L.Nil in
+    let l2, l2w = changeable (L.Cons (2, l3)) in
+    let l1, l1w = changeable (L.Cons (1, l2)) in
+    let l0, l0w = changeable (L.Cons (0, l1)) in
 
     let len = length l0 in
     let assert_len n = assert_equal ~printer:string_of_int n (read len) in
@@ -109,9 +109,9 @@ let tests = "Afp" >::: [
     assert_lengths 4;
 
     lengths := 0;
-    write l1 (L.Cons (1, l3));
-    let l4 = changeable (L.Cons (4, l1)) in
-    write l0 (L.Cons (0, l4));
+    write l1w (L.Cons (1, l3));
+    let l4, l4w = changeable (L.Cons (4, l1)) in
+    write l0w (L.Cons (0, l4));
     propagate ();
     assert_len 3;
     assert_lengths 3
