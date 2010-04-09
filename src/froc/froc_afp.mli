@@ -60,8 +60,6 @@ val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t * 'a u
 val return : 'a -> 'a t
   (**
      [return v] is a constant changeable with value [v].
-
-     It is a runtime error if you try to change it.
   *)
 
 val fail : exn -> 'a t

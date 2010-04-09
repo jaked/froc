@@ -72,7 +72,7 @@ let fail e = make_constant (Fail e)
 
 let write_result u r =
   match repr_of_u u with
-    | Constant _ -> invalid_arg "can't change a constant"
+    | Constant _ -> assert false
     | Changeable c ->
         let eq =
           match c.state, r with
@@ -87,7 +87,7 @@ let write_result u r =
 
 let write_result_no_eq u r =
   match repr_of_u u with
-    | Constant _ -> invalid_arg "can't change a constant"
+    | Constant _ -> assert false
     | Changeable c ->
         c.state <- r;
         Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
