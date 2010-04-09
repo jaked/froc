@@ -75,6 +75,13 @@ let write_result t r =
           Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
         end
 
+let write_result_no_eq t r =
+  match t with
+    | Constant _ -> invalid_arg "can't change a constant"
+    | Changeable c ->
+        c.state <- r;
+        Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
+
 let write t v = write_result t (Value v)
 let write_exn t e = write_result t (Fail e)
 
@@ -162,9 +169,8 @@ let add_reader t read =
   add_dep start t (enqueue r)
 
 let connect t t' =
-  let f _ = write_result t (read_result t') in
-  f ();
-  notify t' f
+  write_result t (read_result t');
+  add_dep (TS.tick ()) t' (write_result_no_eq t)
 
 let bind_gen ?eq assign f t =
   let res = make_changeable ?eq () in
