@@ -262,10 +262,9 @@ let memo ?size ?hash ?eq () =
         let start = TS.tick () in
         let result = try Value (f k) with e -> Fail e in
         let finish = TS.tick () in
-        Froc_hashtbl.add h k { m_result = result; m_start = start; m_finish = finish };
-        let cancel () =
-          let ok m = TS.eq start m.m_start && TS.eq finish m.m_finish in
-          Froc_hashtbl.remove h k ok in
+        let m = { m_result = result; m_start = start; m_finish = finish } in
+        Froc_hashtbl.add h k m;
+        let cancel () = Froc_hashtbl.remove h k (fun m' -> m' == m) in
         TS.add_cleanup finish cancel;
         result in
     match result with Value v -> v | Fail e -> raise e
