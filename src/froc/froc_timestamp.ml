@@ -22,24 +22,20 @@ let debug = ref ignore
 let set_debug f = debug := f
 
 type t = {
-  mutable id : int;
+  mutable spliced_out : bool;
   mutable next : t;
   mutable cleanup : unit -> unit;
 }
 
-let is_spliced_out t = t.id = -1
+let is_spliced_out t = t.spliced_out
 
 let check t =
-  if is_spliced_out t
+  if t.spliced_out
   then raise (Invalid_argument "spliced out timestamp")
 
-let next_id =
-  let next_id = ref 1 in
-  fun () -> let id = !next_id in incr next_id; id
-
 let empty () =
-  let rec s = { id = 0; next = s; cleanup = ignore } in
-  { id = next_id (); next = s; cleanup = ignore }
+  let rec s = { spliced_out = false; next = s; cleanup = ignore } in
+  { spliced_out = false; next = s; cleanup = ignore }
 
 let now = ref (empty ())
 
@@ -51,7 +47,7 @@ let init () = now := empty ()
 let tick () =
   let t = !now in
   check t;
-  let t' = { id = next_id (); next = t.next; cleanup = ignore } in
+  let t' = { spliced_out = false; next = t.next; cleanup = ignore } in
   t.next <- t';
   now := t';
   t'
@@ -65,11 +61,14 @@ let splice_out t1 t2 =
   check t1;
   check t2;
   let rec loop t =
-    match t.id with
-      | -1 -> assert false
-      | 0 -> raise (Invalid_argument "t1 >= t2")
-      | id when id = t2.id -> ()
-      | _ -> t.cleanup (); t.cleanup <- ignore; t.id <- -1; loop t.next in
+    if t == t.next then raise (Invalid_argument "t1 >= t2");
+    if t == t2 then ()
+    else begin
+      t.cleanup ();
+      t.cleanup <- ignore;
+      t.spliced_out <- true;
+      loop t.next
+    end in
   loop t1.next;
   t1.next <- t2
 
@@ -82,17 +81,14 @@ let compare t1 t2 =
     the heap when it should, but there's no harm in leaving it around
     since we just ignore it when it is the min.
   *)
-  match t1.id, t2.id with
-    | id1, id2 when id1 = id2 -> 0
-    | -1, _ -> -1
-    | _, -1 -> 1
-    | _, _ ->
-        let rec loop t =
-          match t.id with
-            | -1 -> assert false
-            | 0 -> 1
-            | id when id = t2.id -> -1
-            | _ -> loop t.next in
-        loop t1.next
+  if t1 == t2 then 0
+  else if t1.spliced_out then -1
+  else if t2.spliced_out then 1
+  else 
+    let rec loop t =
+      if t == t.next then 1
+      else if t == t2 then -1
+      else loop t.next in
+    loop t1.next
 
-let eq t1 t2 = t1.id = t2.id
+let eq t1 t2 = t1 == t2
