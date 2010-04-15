@@ -51,6 +51,8 @@ val cleanup : (unit -> unit) -> unit
 val make_changeable : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t * 'a u
 val make_constant : 'a result -> 'a t
 
+val hash : 'a t -> int
+
 val init : unit -> unit
 val propagate : unit -> unit
 val set_exn_handler : (exn -> unit) -> unit

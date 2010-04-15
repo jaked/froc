@@ -164,7 +164,14 @@ val memo :
        let rec f x = ... memo f y in
        let f x = memo f x
      ]}
+
+     The default hash function is not appropriate for changeables
+     (since they contain mutable data) so you should use [hash]
+     instead.
   *)
+
+val hash : 'a t -> int
+  (** A hash function for changeables, *)
 
 (** {2 Variations} *)
 

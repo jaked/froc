@@ -72,6 +72,11 @@ let notify_e t f =
         let cancel () = Dlist.remove dl in
         TS.add_cleanup (TS.tick ()) cancel
 
+let hash_event t =
+  match repr_of_event t with
+    | Never -> 0
+    | Occurs o -> o.e_id
+
 let merge ts =
   let t, s = make_event () in
   List.iter (fun t' -> notify_e t' (send_result s)) ts;
@@ -147,6 +152,8 @@ let send_exn t e = send_result t (Fail e)
 type 'a behavior = 'a t
 
 let notify_b = notify
+
+let hash_behavior = hash
 
 let switch bb = bb >>= fun b -> b
 

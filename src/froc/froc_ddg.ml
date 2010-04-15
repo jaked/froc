@@ -39,7 +39,7 @@ type 'a changeable = {
   mutable deps : ('a result -> unit) Dlist.t;
 }
 
-type 'a repr = Constant of 'a result | Changeable of 'a changeable
+type 'a repr = Constant of int * 'a result | Changeable of 'a changeable
 
 type +'a t
 type -'a u
@@ -50,6 +50,11 @@ external u_of_changeable : 'a changeable -> 'a u = "%identity"
 external changeable_of_u : 'a u -> 'a changeable = "%identity"
 
 let total_eq v1 v2 = try compare v1 v2 = 0 with _ -> false
+
+let hash t =
+  match repr_of_t t with
+    | Constant (id, _) -> id
+    | Changeable c -> c.id
 
 exception Unset
 
@@ -69,7 +74,7 @@ let make_changeable
   } in
   t_of_repr (Changeable c), u_of_changeable c
 
-let make_constant result = t_of_repr (Constant result)
+let make_constant result = t_of_repr (Constant (next_id (), result))
 
 let changeable ?eq v = make_changeable ?eq ~result:(Value v) ()
 let return v = make_constant (Value v)
@@ -98,7 +103,7 @@ let write_exn u e = write_result u (Fail e)
 
 let read_result t =
   match repr_of_t t with
-    | Constant c -> c
+    | Constant (_, r) -> r
     | Changeable c -> c.state
 
 let read t =

@@ -170,7 +170,15 @@ val memo :
        let rec f x = ... memo f y in
        let f x = memo f x
      ]}
+
+     The default hash function is not appropriate for behaviors and
+     events (since they contain mutable data) so you should use
+     [hash_behavior] and [hash_event] instead.
   *)
+
+val hash_behavior : 'a behavior -> int
+  (** A hash function for behaviors, *)
+
 
 (** {2 Events} *)
 
@@ -197,6 +205,9 @@ val send_exn : 'a event_sender -> exn -> unit
 
 val send_result : 'a event_sender -> 'a result -> unit
   (** [send_result e r] calls the listeners of the associated event with [r]. *)
+
+val hash_event : 'a event -> int
+  (** A hash function for events. *)
 
 (** {2 Derived operations} *)
 
