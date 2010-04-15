@@ -31,9 +31,9 @@
    time. Binding a behavior causes the binder to be made a dependency
    of the behavior, and to be re-executed when the behavior changes.
 
-   An {e event} is a channel over which values may be sent. Listeners
-   on the channel are notified when an event occurs (i.e. a value is
-   sent on the channel).
+   An {e event} is a channel over which values may be sent (using the
+   associated {e event_sender}). Listeners on the channel are notified
+   when an event occurs (i.e. a value is sent on the channel).
 
    Sent events are queued; after each event in the queue is sent and
    its listeners notified, the dependency graph is processed to update
@@ -154,10 +154,13 @@ val cleanup : (unit -> unit) -> unit
 
 (** {2 Events} *)
 
-type 'a event
+type +'a event
   (** Type of events of type ['a]. *)
 
-val make_event : unit -> 'a event
+type -'a event_sender
+  (** Type of event senders of type ['a]. *)
+
+val make_event : unit -> 'a event * 'a event_sender
   (** Makes a new channel for events of type ['a]. *)
 
 val notify_e : 'a event -> ('a result -> unit) -> unit
@@ -166,14 +169,14 @@ val notify_e : 'a event -> ('a result -> unit) -> unit
      is sent on it.
   *)
 
-val send : 'a event -> 'a -> unit
-  (** [send e v] calls the listeners of [e] with [Value v]. *) 
+val send : 'a event_sender -> 'a -> unit
+  (** [send e v] calls the listeners of the associated event with [Value v]. *) 
 
-val send_exn : 'a event -> exn -> unit
-  (** [send_exn e x] calls the listeners of [e] with [Fail x]. *) 
+val send_exn : 'a event_sender -> exn -> unit
+  (** [send_exn e x] calls the listeners of the associated event with [Fail x]. *) 
 
-val send_result : 'a event -> 'a result -> unit
-  (** [send_result e r] calls the listeners of [e] with [r]. *)
+val send_result : 'a event_sender -> 'a result -> unit
+  (** [send_result e r] calls the listeners of the associated event with [r]. *)
 
 (** {2 Derived operations} *)
 

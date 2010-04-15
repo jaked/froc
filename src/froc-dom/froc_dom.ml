@@ -23,14 +23,14 @@ let (|>) x f = f x
 open Froc
 
 let ticks_b msb =
-  let e = make_event () in
+  let e, s = make_event () in
   let id = ref None in
   let clear () =
     match !id with Some i -> Dom.window#clearInterval i; id := None | _ -> () in
   let set_interval r =
     clear ();
     match r with
-      | Value p -> id := Some (Dom.window#setInterval (fun () -> send e ()) p)
+      | Value p -> id := Some (Dom.window#setInterval (fun () -> send s ()) p)
       | Fail _ -> () (* ? *) in
   set_interval (read_result msb);
   cleanup clear;
@@ -38,8 +38,8 @@ let ticks_b msb =
   e
 
 let ticks ms =
-  let e = make_event () in
-  let id = Dom.window#setInterval (fun () -> send e ()) ms in
+  let e, s = make_event () in
+  let id = Dom.window#setInterval (fun () -> send s ()) ms in
   cleanup (fun () -> Dom.window#clearInterval id);
   e
 
@@ -60,18 +60,18 @@ let send_delayed_event e de =
   send de
 
 let delay_eb t msb =
-  let e = make_event () in
+  let e, s = make_event () in
   let rec de = { l_val = Fail Exit; l_next = de } in
   let de_next = ref de in
   notify_e t (fun r ->
     match read_result msb with
       | (Fail _) as r ->
           de_next := { l_val = r; l_next = !de_next};
-          send_delayed_event e !de_next
+          send_delayed_event s !de_next
       | Value ms ->
           let de = { l_val = r; l_next = !de_next } in
           de_next := de;
-          ignore (Dom.window#setTimeout (fun () -> send_delayed_event e de) ms));
+          ignore (Dom.window#setTimeout (fun () -> send_delayed_event s de) ms));
   e
 
 let delay_e t ms = delay_eb t (return ms)
@@ -82,8 +82,8 @@ let delay_bb t msb =
 let delay_b t ms = delay_bb t (return ms)
 
 let mouse_e () =
-  let e = make_event () in
-  let f me = send e (me#_get_clientX, me#_get_clientY) in
+  let e, s = make_event () in
+  let f me = send s (me#_get_clientX, me#_get_clientY) in
   Dom.document#addEventListener_mouseEvent_ "mousemove" f false;
   cleanup (fun () -> Dom.document#addEventListener_mouseEvent_ "mousemove" f false);
   e
@@ -95,8 +95,8 @@ let attach_innerHTML elem b =
   notify_e e (function Value s -> elem#_set_innerHTML s | _ -> ())
 
 let input_value_e input =
-  let e = make_event () in
-  let f _ = send e input#_get_value in
+  let e, s = make_event () in
+  let f _ = send s input#_get_value in
   input#addEventListener "change" f false;
   cleanup (fun () -> input#addEventListener "change" f false);
   e
@@ -136,8 +136,8 @@ let replaceNode n nb =
   notify_b nb update
 
 let clicks (elem : #Dom.element) =
-  let e = make_event () in
-  let f ev = ev#preventDefault; send e () in
+  let e, s = make_event () in
+  let f ev = ev#preventDefault; send s () in
   elem#addEventListener "click" f false;
   cleanup (fun () -> elem#removeEventListener "click" f false);
   e
