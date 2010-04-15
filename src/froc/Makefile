@@ -7,7 +7,7 @@ endif
 FILES=\
 froc.cma froc.cmxa froc.a $(CMJSA) \
 froc.mli froc.cmi \
-froc_afp.mli froc_afp.cmi \
+froc_sa.mli froc_sa.cmi \
 froc_ddg.mli froc_ddg.cmi \
 
 BFILES=$(addprefix _build/,$(FILES))

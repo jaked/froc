@@ -18,22 +18,23 @@
  * MA 02111-1307, USA
  *)
 
-(** Adaptive functional programming *)
+(** Self-adjusting computation *)
 (**
    {2 Overview}
 
-   [Froc_afp] implements adaptive functional programming following
+   [Froc_sa] implements {e self-adjusting computation} following
    Acar et al. Changeable values are presented as a monad, using ideas
    from [Lwt].
 
    A {e changeable} is a monadic value that can change over
    time. Binding a changeable causes the binder to be made a
    dependency of the changeable, and to be re-executed when the
-   changeable changes.
+   changeable changes. A {e writeable} associated with a changeable is
+   used to change a changeable.
 
-   Adaptive functional programming proceeds in phases: after an
-   initial computation, call [write] to change some inputs, then
-   [propagate] to make the result consistent again.
+   Self-adjusting computation proceeds in phases: after an initial
+   computation, call [write] to change some inputs, then [propagate]
+   to make the result consistent again.
 *)
 
 val init : unit -> unit
@@ -130,15 +131,16 @@ val read : 'a t -> 'a
 
 val write : 'a u -> 'a -> unit
   (**
-     [write c v] updates the value of [c]. Changeables that depend on
-     [c] will not be consistent until you call [propagate].
+     [write w v] updates the value of the associated changeable
+     [c]. Changeables that depend on [c] will not be consistent until
+     you call [propagate].
   *)
 
 val write_exn : 'a u -> exn -> unit
   (**
-     [write_exn c e] updates [c] to fail with exception
-     [e]. Changeables that depend on [c] will not be consistent until
-     you call [propagate].
+     [write_exn w e] updates the associated changeable [c] to fail
+     with exception [e]. Changeables that depend on [c] will not be
+     consistent until you call [propagate].
   *)
 
 val propagate : unit -> unit

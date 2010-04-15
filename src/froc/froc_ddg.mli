@@ -18,7 +18,7 @@
  * MA 02111-1307, USA
  *)
 
-(** Dynamic dependency graph underlying [Froc] and [Froc_afp]. *)
+(** Dynamic dependency graph underlying [Froc] and [Froc_sa]. *)
 
 type +'a t
 type -'a u

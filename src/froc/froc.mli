@@ -24,7 +24,7 @@
 
    [Froc] implements functional reactive programming in the style of
    FrTime / Flapjax (but typed). It uses the dynamic dependency graph
-   of Acar et al. (adaptive functional programming). Behaviors are
+   of Acar et al. (self-adjusting computation). Behaviors are
    presented as monadic values, using ideas from [Lwt].
 
    A {e behavior} is a monadic value that can change over
