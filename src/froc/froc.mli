@@ -152,6 +152,26 @@ val cleanup : (unit -> unit) -> unit
      automatically.
   *)
 
+val memo :
+  ?size:int -> ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit ->
+  ('a -> 'b) ->
+  ('a -> 'b)
+  (**
+     [memo f] creates a {e memo function} from [f]. Calls to the memo
+     function are memoized and may be reused when the calling context
+     is re-executed.
+
+     [memo] does not provide general-purpose memoization; calls may be
+     reused only within the calling context in which they originally
+     occurred, and only in the original order they occurred.
+
+     To memoize a recursive function, use the following idiom: {[
+       let m = memo () in
+       let rec f x = ... memo f y in
+       let f x = memo f x
+     ]}
+  *)
+
 (** {2 Events} *)
 
 type +'a event
@@ -225,12 +245,6 @@ val count : 'a event -> int behavior
      [count e] behaves as the number of times [e] has fired (since
      [count] was called).
   *)
-
-val memo :
-  ?size:int -> ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit ->
-  ('a -> 'b) ->
-  ('a -> 'b)
-  (** *)
 
 (** {2 Variations} *)
 
