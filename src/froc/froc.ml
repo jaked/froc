@@ -64,13 +64,19 @@ let send_result s r =
 let send s v = send_result s (Value v)
 let send_exn s e = send_result s (Fail e)
 
-let notify_e t f =
+let notify_result_e t f =
   match repr_of_event t with
     | Never -> ()
     | Occurs o ->
         let dl = Dlist.add_after o.e_deps f in
         let cancel () = Dlist.remove dl in
         TS.add_cleanup (TS.tick ()) cancel
+
+let notify_e t f =
+  notify_result_e t
+    (function
+       | Value v -> f v
+       | Fail _ -> ())
 
 let hash_event t =
   match repr_of_event t with
@@ -79,12 +85,12 @@ let hash_event t =
 
 let merge ts =
   let t, s = make_event () in
-  List.iter (fun t' -> notify_e t' (send_result s)) ts;
+  List.iter (fun t' -> notify_result_e t' (send_result s)) ts;
   t
 
 let map f t =
   let t', s' = make_event () in
-  notify_e t
+  notify_result_e t
     (fun r ->
       let r =
         match r with
@@ -97,7 +103,7 @@ let map f t =
 
 let filter p t =
   let t', s' = make_event () in
-  notify_e t
+  notify_result_e t
     (fun r ->
       let r =
         match r with
@@ -111,7 +117,7 @@ let filter p t =
 let collect f init t =
   let t', s' = make_event () in
   let st = ref (Value init) in
-  notify_e t
+  notify_result_e t
     (fun r ->
       let r =
         match !st, r with
@@ -153,20 +159,22 @@ type 'a behavior = 'a t
 
 let notify_b = notify
 
+let notify_result_b = notify_result
+
 let hash_behavior = hash
 
 let switch bb = bb >>= fun b -> b
 
 let hold_result ?eq init t =
   let bt, bu = make_changeable ?eq ~result:init () in
-  notify_e t (write_result bu);
+  notify_result_e t (write_result bu);
   bt
 
 let hold ?eq init e = hold_result ?eq (Value init) e
 
 let changes b =
   let t, s = make_event () in
-  notify b (send_result s);
+  notify_result_b b (send_result s);
   t
 
 let when_true b =

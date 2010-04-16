@@ -34,7 +34,7 @@ let ticks_b msb =
       | Fail _ -> () (* ? *) in
   set_interval (read_result msb);
   cleanup clear;
-  notify_b msb set_interval;
+  notify_result_b msb set_interval;
   e
 
 let ticks ms =
@@ -63,7 +63,7 @@ let delay_eb t msb =
   let e, s = make_event () in
   let rec de = { l_val = Fail Exit; l_next = de } in
   let de_next = ref de in
-  notify_e t (fun r ->
+  notify_result_e t (fun r ->
     match read_result msb with
       | (Fail _) as r ->
           de_next := { l_val = r; l_next = !de_next};
@@ -92,7 +92,7 @@ let mouse_b () = hold (0, 0) (mouse_e ())
 
 let attach_innerHTML elem b =
   let e = changes b in
-  notify_e e (function Value s -> elem#_set_innerHTML s | _ -> ())
+  notify_e e (fun s -> elem#_set_innerHTML s)
 
 let input_value_e input =
   let e, s = make_event () in
@@ -122,7 +122,7 @@ let appendChild n nb =
         | Some oc -> n#replaceChild c oc);
     old := Some c in
   update (read_result nb);
-  notify_b nb update
+  notify_result_b nb update
 
 let replaceNode n nb =
   let n = (n :> Dom.node) in
@@ -133,7 +133,7 @@ let replaceNode n nb =
     ignore (p#replaceChild c !old);
     old := c in
   update (read_result nb);
-  notify_b nb update
+  notify_result_b nb update
 
 let clicks (elem : #Dom.element) =
   let e, s = make_event () in

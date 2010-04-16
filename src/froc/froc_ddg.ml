@@ -119,8 +119,14 @@ let add_dep ts t dep =
         let cancel () = Dlist.remove dl in
         TS.add_cleanup ts cancel
 
-let notify t f =
+let notify_result t f =
   add_dep (TS.tick ()) t f
+
+let notify t f =
+  notify_result t
+    (function
+       | Fail _ -> ()
+       | Value v -> f v)
 
 let cleanup f =
   TS.add_cleanup (TS.tick ()) f

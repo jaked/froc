@@ -51,4 +51,4 @@ let attach
     | Froc.Fail _ -> () (* XXX ? *) in
   (* maybe notify_b should notify when you first call it? *)
   notify (Froc.read_result instrsb);
-  Froc.notify_b instrsb notify
+  Froc.notify_result_b instrsb notify

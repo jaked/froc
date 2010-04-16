@@ -45,7 +45,8 @@ val write : 'a u -> 'a -> unit
 val write_exn : 'a u -> exn -> unit
 val write_result : 'a u -> 'a result -> unit
 
-val notify : 'a t -> ('a result -> unit) -> unit
+val notify : 'a t -> ('a -> unit) -> unit
+val notify_result : 'a t -> ('a result -> unit) -> unit
 val cleanup : (unit -> unit) -> unit
 
 val make_changeable : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t * 'a u

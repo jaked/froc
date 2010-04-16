@@ -136,10 +136,17 @@ val read_result : 'a behavior -> 'a result
      an exception.
   *)
 
-val notify_b : 'a behavior -> ('a result -> unit) -> unit
+val notify_b : 'a behavior -> ('a -> unit) -> unit
   (**
-     Adds a listener for the result of a behavior, which is called
-     whenever the result changes.
+     Adds a listener for the value of a behavior, which is called
+     whenever the value changes. When the behavior fails the listener
+     is not called.
+  *)
+
+val notify_result_b : 'a behavior -> ('a result -> unit) -> unit
+  (**
+     Same as [notify_b] but the listener is called with a result when
+     the value changes or when the behavior fails.
   *)
 
 val cleanup : (unit -> unit) -> unit
@@ -191,10 +198,16 @@ type -'a event_sender
 val make_event : unit -> 'a event * 'a event_sender
   (** Makes a new channel for events of type ['a]. *)
 
-val notify_e : 'a event -> ('a result -> unit) -> unit
+val notify_e : 'a event -> ('a -> unit) -> unit
   (**
-     Adds a listener on the channel, which is called whenever an event
-     is sent on it.
+     Adds a listener on the channel, which is called whenever a value
+     is sent on it. When a failure is sent the listener is not called.
+  *)
+
+val notify_result_e : 'a event -> ('a result -> unit) -> unit
+  (**
+     Same as [notify_e] but the listener is called with a result when
+     a value or a failure is sent.
   *)
 
 val send : 'a event_sender -> 'a -> unit
