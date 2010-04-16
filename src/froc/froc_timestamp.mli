@@ -18,17 +18,73 @@
  * MA 02111-1307, USA
  *)
 
+(**
+   Timestamps
+
+   Timestamps are ordered abstract values, arranged in a
+   timeline. Timestamps can added and removed from the timeline,
+   maintaining the order of those already in the timeline.
+
+   The module maintains a global [now] representing the last-added
+   timestamp.
+
+   Cleanup functions can be attached to a timestamp, which are run
+   when the timestamp is removed from the timeline.
+*)
+
 type t
+  (** The type of timestamps *)
 
 val init : unit -> unit
-val get_now : unit -> t
-val set_now : t -> unit
+  (**
+     Initialize the timestamp module. If already initialized,
+     re-initialize, running all cleanup functions.
+``*)
+
 val tick : unit -> t
+  (**
+     Adds a new timestamp following [now] and returns it; [now] is
+     updated to be the new timestamp.
+  *)
+
+val get_now : unit -> t
+  (** Returns the current [now] timestamp *)
+
+val set_now : t -> unit
+  (**
+     Sets the current [now] timestamp. Subsequent calls to [tick] add
+     timestamps after [now] and before [now]'s successor.
+  *)
 
 val add_cleanup : t -> (unit -> unit) -> unit
+  (**
+     [add_cleanup t f] attaches a function to [t] which is run when
+     [t] is removed.
+  *)
+
 val splice_out : t -> t -> unit
+  (**
+     [splice_out s e] removes the timestamps between [s] and [e], not
+     including [s] and [e] themselves. It is an error if [e] occurs
+     before [s] or if [e] and [s] are the same timestamp.
+  *)
+
 val is_spliced_out : t -> bool
+  (**
+     [is_spliced_out t] is true if [t] has been removed from the
+     timeline.
+  *)
+
 val compare : t -> t -> int
+  (**
+     [compare t1 t2] returns [-1] if [t1] occurs before [t2], [1] if
+     [t1] occurs after [t2], or [0] if [t1] and [t2] are the same
+     timestamp.
+  *)
+
 val eq : t -> t -> bool
+  (**
+     [eq t1 t2] returns true iff [t1] and [t2] are the same timestamp.
+  *)
 
 val set_debug : (string -> unit) -> unit

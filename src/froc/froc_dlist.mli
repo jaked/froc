@@ -18,6 +18,8 @@
  * MA 02111-1307, USA
  *)
 
+(** Double-linked lists. *)
+
 type 'a t = private {
   data : 'a;
   mutable prev : 'a t;
@@ -25,7 +27,20 @@ type 'a t = private {
 }
 
 val empty : unit -> 'a t
+  (** Returns a new list consisting of a dummy element; [data] is invalid. *)
+
 val add_after : 'a t -> 'a -> 'a t
+  (** [add_after t v] inserts [v] after [t] and returns the new link. *)
+
 val add_before : 'a t -> 'a -> 'a t
+  (** [add_before t v] inserts [v] before [t] and returns the new link. *)
+
 val remove : 'a t -> unit
+  (** [remove t] removes [t] from the list it is linked into. *)
+
 val iter : ('a -> unit) -> 'a t -> unit
+  (**
+     [iter f t] calls [f] on each element of [t]. The first element
+     is skipped; it is expected that [iter] is called on the dummy
+     element returned from [empty].
+  *)

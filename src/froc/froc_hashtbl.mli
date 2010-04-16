@@ -19,12 +19,42 @@
  * MA 02111-1307, USA
  *)
 
+(** Hash tables
+
+    Hash tables are hashed association tables, with in-place modification.
+
+    Froc_hashtbl differs from the stdlib Hashtbl in that [find] and
+    [remove] take a predicate on the value, so they can be made to
+    apply to specific bindings for a key.
+*)
+
 type ('a, 'b) t
+  (** The type of hash tables from type ['a] to type ['b]. *)
 
 val create : ?size:int -> ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit -> ('a, 'b) t
+  (**
+     [create ()] creates a new, empty hash table. Optionally the
+     initial [size] may be specified (default is 17), and [hash] and [eq]
+     functions (as with [Hashtbl.make]).
+  *)
 
 val add : ('a, 'b) t -> 'a -> 'b -> unit
+  (**
+     [add tbl x y] adds a binding of [x] to [y] in table [tbl].
+     Successive bindings are prepended to the list of previous
+     bindings.
+  *)
 
 val find : ('a, 'b) t -> 'a -> ('b -> bool) -> 'b
+  (**
+     [find tbl x p] returns the latest binding of [x] in [tbl] such
+     that [f x] is true, or raises [Not_found] if no such binding
+     exists.
+  *)
 
 val remove : ('a, 'b) t -> 'a -> ('b -> bool) -> unit
+  (**
+     [remove tbl x] removes the latest binding of [x] in [tbl] such
+     that [f x] is true.  It does nothing if [x] is not bound in
+     [tbl].
+  *)
