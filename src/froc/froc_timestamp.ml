@@ -37,12 +37,22 @@ let empty () =
   let rec s = { spliced_out = false; next = s; cleanup = ignore } in
   { spliced_out = false; next = s; cleanup = ignore }
 
-let now = ref (empty ())
+let timeline = ref (empty ())
+let now = ref !timeline
 
 let get_now () = !now
 let set_now t = now := t
 
-let init () = now := empty ()
+let init () =
+  let rec loop t =
+    if t != t.next
+    then begin
+      t.cleanup ();
+      loop t.next
+    end in
+  loop !timeline;
+  timeline := empty ();
+  now := !timeline
 
 let tick () =
   let t = !now in
