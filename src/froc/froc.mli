@@ -270,6 +270,14 @@ val count : 'a event -> int behavior
      [count] was called).
   *)
 
+val make_cell : 'a -> 'a behavior * ('a -> unit)
+  (**
+     [make_cell v] returns a behavior (with initial value [v]) and a
+     setter function which changes the behavior's value. The setter
+     respects the update cycle (it enqueues an event) so may be used
+     freely.
+  *)
+
 (** {2 Variations} *)
 
 val bindN : ?eq:('b -> 'b -> bool) -> 'a behavior list -> ('a list -> 'b behavior) -> 'b behavior

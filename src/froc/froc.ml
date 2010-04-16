@@ -181,3 +181,7 @@ let when_true b =
   map (fun b -> ()) (filter (fun b -> b) (changes b))
 
 let count t = hold 0 (collect (fun n _ -> n + 1) 0 t)
+
+let make_cell v =
+  let e, s = make_event () in
+  (hold v e, send s)
