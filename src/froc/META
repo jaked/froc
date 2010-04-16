@@ -1,5 +1,5 @@
 name="Froc"
-version="0.1"
+version="0.2"
 description="Functional reactive programming in the style of FrTime"
 archive(js) = "froc.cmjsa"
 archive(byte) = "froc.cma"
