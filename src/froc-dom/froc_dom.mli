@@ -33,6 +33,11 @@ val attach_innerHTML : #Dom.element -> string Froc.behavior -> unit
 
 val input_value_e : #Dom.input -> string Froc.event
 val input_value_b : #Dom.input -> string Froc.behavior
+val attach_input_value_e : #Dom.input -> string Froc.event -> unit
+val attach_input_value_b : #Dom.input -> string Froc.behavior -> unit
+
+val attach_backgroundColor_e : #Dom.element -> string Froc.event -> unit
+val attach_backgroundColor_b : #Dom.element -> string Froc.behavior -> unit
 
 val appendChild : #Dom.node -> #Dom.node Froc.behavior -> unit
 val replaceNode : #Dom.node -> #Dom.node Froc.behavior -> unit

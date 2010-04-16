@@ -103,6 +103,14 @@ let input_value_e input =
 
 let input_value_b input = hold input#_get_value (input_value_e input)
 
+let attach_input_value_e i e = notify_e e (fun v -> i#_set_value v)
+
+let attach_input_value_b i b = attach_input_value_e i (changes b)
+
+let attach_backgroundColor_e el e = notify_e e (fun v -> el#_get_style#_set_backgroundColor v)
+
+let attach_backgroundColor_b el b = attach_backgroundColor_e el (changes b)
+
 let node_of_result = function
   | Value v -> (v :> Dom.node)
   | Fail e -> (* ? *)
