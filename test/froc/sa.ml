@@ -1,8 +1,8 @@
 open OUnit
 
-open Froc_afp
+open Froc_sa
 
-let tests = "Afp" >::: [
+let tests = "Sa" >::: [
   "lift" >:: begin fun () ->
     let adds = ref 0 in
     let muls = ref 0 in

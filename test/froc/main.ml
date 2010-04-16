@@ -1,7 +1,7 @@
 open OUnit
 
 let tests = "Froc" >::: [
-  Afp.tests
+  Sa.tests
 ]
 
 ;;
