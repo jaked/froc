@@ -1,6 +1,10 @@
 all: myocamlbuild.ml
 	ocamlbuild main.byte --
 
+js:
+	ocamlbuild main.js
+	js _build/main.js
+
 clean:
 	ocamlbuild -clean
 	rm -f myocamlbuild.ml

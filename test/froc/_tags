@@ -1,2 +1,3 @@
 <*.ml*> : pkg_oUnit, pkg_froc
 <*.byte> : pkg_oUnit, pkg_froc
+<*.js> : pkg_ounit-js, pkg_froc
