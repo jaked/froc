@@ -187,7 +187,8 @@ let enqueue e = pq := PQ.add e !pq
 let add_reader t read =
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   add_dep start t dep
 
 let connect u t' =
@@ -297,7 +298,8 @@ let bind2_gen ?eq assign f t1 t2 =
           with e -> write_exn ru e in
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   add_dep start t1 dep;
   add_dep start t2 dep;
   rt
@@ -318,7 +320,8 @@ let bind3_gen ?eq assign f t1 t2 t3 =
           with e -> write_exn ru e in
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   add_dep start t1 dep;
   add_dep start t2 dep;
   add_dep start t3 dep;
@@ -341,7 +344,8 @@ let bind4_gen ?eq assign f t1 t2 t3 t4 =
           with e -> write_exn ru e in
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   add_dep start t1 dep;
   add_dep start t2 dep;
   add_dep start t3 dep;
@@ -366,7 +370,8 @@ let bind5_gen ?eq assign f t1 t2 t3 t4 t5 =
           with e -> write_exn ru e in
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   add_dep start t1 dep;
   add_dep start t2 dep;
   add_dep start t3 dep;
@@ -393,7 +398,8 @@ let bind6_gen ?eq assign f t1 t2 t3 t4 t5 t6 =
           with e -> write_exn ru e in
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   add_dep start t1 dep;
   add_dep start t2 dep;
   add_dep start t3 dep;
@@ -422,7 +428,8 @@ let bind7_gen ?eq assign f t1 t2 t3 t4 t5 t6 t7 =
           with e -> write_exn ru e in
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   add_dep start t1 dep;
   add_dep start t2 dep;
   add_dep start t3 dep;
@@ -445,7 +452,8 @@ let bindN_gen ?eq assign f ts =
     with e -> write_exn ru e in
   let start = TS.tick () in
   read ();
-  let dep _ = enqueue { read = read; start = start; finish = TS.tick () } in
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
   List.iter (fun t -> add_dep start t dep) ts;
   rt
 
