@@ -58,7 +58,7 @@ type 'a result = Value of 'a | Fail of exn
 
 val return : 'a -> 'a behavior
   (**
-     [constant v] is a constant behavior with value [v].
+     [return v] is a constant behavior with value [v].
   *)
 
 val fail : exn -> 'a behavior
