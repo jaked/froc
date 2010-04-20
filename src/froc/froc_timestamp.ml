@@ -24,7 +24,7 @@ let set_debug f = debug := f
 type t = {
   mutable spliced_out : bool;
   mutable next : t;
-  mutable cleanup : unit -> unit;
+  mutable cleanup : (unit -> unit) list;
 }
 
 let is_spliced_out t = t.spliced_out
@@ -34,8 +34,8 @@ let check t =
   then raise (Invalid_argument "spliced out timestamp")
 
 let empty () =
-  let rec s = { spliced_out = false; next = s; cleanup = ignore } in
-  { spliced_out = false; next = s; cleanup = ignore }
+  let rec s = { spliced_out = false; next = s; cleanup = [] } in
+  { spliced_out = false; next = s; cleanup = [] }
 
 let timeline = ref (empty ())
 let now = ref !timeline
@@ -47,7 +47,7 @@ let init () =
   let rec loop t =
     if t != t.next
     then begin
-      t.cleanup ();
+      List.iter (fun c -> c ()) t.cleanup;
       loop t.next
     end in
   loop !timeline;
@@ -57,15 +57,14 @@ let init () =
 let tick () =
   let t = !now in
   check t;
-  let t' = { spliced_out = false; next = t.next; cleanup = ignore } in
+  let t' = { spliced_out = false; next = t.next; cleanup = [] } in
   t.next <- t';
   now := t';
   t'
 
-let add_cleanup t cleanup' =
+let add_cleanup t cleanup =
   check t;
-  let cleanup = t.cleanup in
-  t.cleanup <- (fun () -> cleanup (); cleanup' ())
+  t.cleanup <- cleanup :: t.cleanup
 
 let splice_out t1 t2 =
   check t1;
@@ -74,8 +73,8 @@ let splice_out t1 t2 =
     if t == t.next then raise (Invalid_argument "t1 >= t2");
     if t == t2 then ()
     else begin
-      t.cleanup ();
-      t.cleanup <- ignore;
+      List.iter (fun c -> c ()) t.cleanup;
+      t.cleanup <- [];
       t.spliced_out <- true;
       loop t.next
     end in
