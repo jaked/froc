@@ -202,6 +202,9 @@ dispatch begin function
        flag ["ocaml"; "compile"; "FAKE_SERVER"] & S[A"-ppopt"; A"-DFAKE_SERVER"];
        flag ["ocaml"; "ocamldep"; "FAKE_SERVER"] & S[A"-ppopt"; A"-DFAKE_SERVER"];
 
+       flag ["ocaml"; "js"; "compile"; "pkg_camlp4.macro"] & S[A"-ppopt"; A"-DOCAMLJS"];
+       flag ["ocaml"; "js"; "ocamldep"; "pkg_camlp4.macro"] & S[A"-ppopt"; A"-DOCAMLJS"];
+
        rule ("orpc: %.ml -> %_aux.ml[i]")
          ~prods:[
            "%_aux.ml"; "%_aux.mli";

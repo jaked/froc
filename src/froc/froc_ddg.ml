@@ -18,6 +18,11 @@
  * MA 02111-1307, USA
  *)
 
+IFDEF OCAMLJS
+THEN
+open Ocamljs.Inline
+ENDIF
+
 module Dlist = Froc_dlist
 module TS = Froc_timestamp
 
@@ -187,9 +192,15 @@ struct
   let rebuild h = for i = (size h - 2) / 2 downto 0 do down h i done
 
   let grow h =
-    let arr' = Array.make (2 * h.len + 1) (Obj.magic None) in
-    Array.blit h.arr 0 arr' 0 h.len;
-    h.arr <- arr'
+    let len = 2 * h.len + 1 in
+    IFDEF OCAMLJS
+    THEN
+      << $h.arr$.length = $len$; >>
+    ELSE
+      let arr' = Array.make len (Obj.magic None) in
+      Array.blit h.arr 0 arr' 0 h.len;
+      h.arr <- arr'
+    ENDIF
 
   let add h n =
     if h.len = Array.length h.arr then grow h;
