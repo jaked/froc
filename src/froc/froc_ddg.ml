@@ -137,52 +137,87 @@ type reader = {
   finish : TS.t;
 }
 
-(*
-module PQ = Pqueue.Make(struct
-  type t = reader
-  let compare t1 t2 = TS.compare t1.start t2.start
-end)
-*)
-
 module PQ : sig
-  type elt = reader
   type t
-  val empty : t
+  val make : unit -> t
   val is_empty : t -> bool
-  val add : elt -> t -> t
-  val find_min : t -> elt
-  val remove_min : t -> t
+  val add : t -> reader -> unit
+  val find_min : t -> reader
+  val remove_min : t -> unit
 end =
 struct
-  type elt = reader
-  type t = elt Dlist.t
-  let empty = Dlist.empty ()
-  let is_empty t = t.Dlist.prev == t && t.Dlist.next == t
-  let add elt d =
-    let rec loop t =
-      if t == d || TS.compare elt.start t.Dlist.data.start = -1
-      then ignore (Dlist.add_before t elt)
-      else loop t.Dlist.next in
-    loop d.Dlist.next;
-    d
-  let find_min t =
-    if is_empty t
+  (* derived from module H in react.ml *)
+
+  type t = { mutable arr : reader array; mutable len : int }
+
+  let make () = { arr = [||]; len = 0; }
+
+  let is_empty t = t.len = 0
+
+  let size t = t.len
+
+  let compare h i i' =
+    let t1 = (Array.unsafe_get h.arr i).start in
+    let t2 = (Array.unsafe_get h.arr i').start in
+    TS.compare t1 t2
+
+  let swap h i i' =
+    let t = Array.unsafe_get h.arr i in
+    Array.unsafe_set h.arr i (Array.unsafe_get h.arr i');
+    Array.unsafe_set h.arr i' t
+
+  let rem_last h = let l = h.len - 1 in (h.len <- l; Array.unsafe_set h.arr l (Obj.magic None))
+
+  let rec up h i =
+    if i = 0 then () else
+    let p = (i - 1) / 2 in                                  (* parent index. *)
+    if compare h i p < 0 then (swap h i p; up h p)
+
+  let rec down h i =
+    let last = size h - 1 in
+    let start = 2 * i in
+    let l = start + 1 in                                (* left child index. *) 
+    let r = start + 2 in                               (* right child index. *)
+    if l > last then () (* no child, stop *) else
+    let child =                                  (* index of smallest child. *)
+      if r > last then l else (if compare h l r < 0 then l else r)
+    in
+    if compare h i child > 0 then (swap h i child; down h child)
+
+  let rebuild h = for i = (size h - 2) / 2 downto 0 do down h i done
+
+  let grow h =
+    let arr' = Array.make (2 * h.len + 1) (Obj.magic None) in
+    Array.blit h.arr 0 arr' 0 h.len;
+    h.arr <- arr'
+
+  let add h n =
+    if h.len = Array.length h.arr then grow h;
+    Array.unsafe_set h.arr h.len n;
+    h.len <- h.len + 1;
+    up h (size h - 1)
+
+  let rec remove_min h = 
+    let s = size h in
+    if s = 0 then () else
+    if s > 1 then 
+      (Array.unsafe_set h.arr 0 (Array.unsafe_get h.arr (s - 1)); rem_last h; down h 0)
+    else
+      rem_last h
+
+  let find_min h =
+    if is_empty h
     then raise Not_found
-    else t.Dlist.next.Dlist.data
-  let remove_min t =
-    if is_empty t
-    then ()
-    else Dlist.remove t.Dlist.next;
-    t
+    else Array.unsafe_get h.arr 0
 end
 
-let pq = ref (PQ.empty)
+let pq = ref (PQ.make ())
 
 let init () =
   TS.init ();
-  pq := PQ.empty
+  pq := PQ.make ()
 
-let enqueue e = pq := PQ.add e !pq
+let enqueue e = PQ.add !pq e
 
 let add_reader t read =
   let start = TS.tick () in
@@ -238,12 +273,12 @@ let rec prop ?until () =
   then
     let r = PQ.find_min !pq in
     if TS.is_spliced_out r.start
-    then begin pq := PQ.remove_min !pq; prop ?until () end
+    then begin PQ.remove_min !pq; prop ?until () end
     else
       match until with
         | Some until when TS.compare r.start until = 1 -> ()
         | _ ->
-            pq := PQ.remove_min !pq;
+            PQ.remove_min !pq;
             TS.set_now r.start;
             Stack.push r.finish finish;
             r.read ();
