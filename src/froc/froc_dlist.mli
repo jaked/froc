@@ -32,9 +32,6 @@ val empty : unit -> 'a t
 val add_after : 'a t -> 'a -> 'a t
   (** [add_after t v] inserts [v] after [t] and returns the new link. *)
 
-val add_before : 'a t -> 'a -> 'a t
-  (** [add_before t v] inserts [v] before [t] and returns the new link. *)
-
 val remove : 'a t -> unit
   (** [remove t] removes [t] from the list it is linked into. *)
 

@@ -34,12 +34,6 @@ let add_after t d =
   t.next <- n;
   n
 
-let add_before t d =
-  let n = { data = d; prev = t.prev; next = t } in
-  t.prev.next <- n;
-  t.prev <- n;
-  n
-
 let remove t =
   t.next.prev <- t.prev; t.prev.next <- t.next;
   t.next <- t; t.prev <- t
