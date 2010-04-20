@@ -83,17 +83,9 @@ let splice_out t1 t2 =
   t1.next <- t2
 
 let compare t1 t2 =
-  (*
-    spliced-out timestamps are less than everything else
-
-    by splicing out timestamps we disturb the heap invariant. I think
-    this is benign; a spliced-out timestamp might not be the min of
-    the heap when it should, but there's no harm in leaving it around
-    since we just ignore it when it is the min.
-  *)
+  check t1;
+  check t2;
   if t1 == t2 then 0
-  else if t1.spliced_out then -1
-  else if t2.spliced_out then 1
   else 
     let rec loop t =
       if t == t.next then 1
@@ -101,4 +93,7 @@ let compare t1 t2 =
       else loop t.next in
     loop t1.next
 
-let eq t1 t2 = t1 == t2
+let eq t1 t2 =
+  check t1;
+  check t2;
+  t1 == t2

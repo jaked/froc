@@ -162,9 +162,14 @@ struct
   let size t = t.len
 
   let compare h i i' =
+    (* spliced-out timestamps sort greater than everything *)
     let t1 = (Array.unsafe_get h.arr i).start in
     let t2 = (Array.unsafe_get h.arr i').start in
-    TS.compare t1 t2
+    match TS.is_spliced_out t1, TS.is_spliced_out t2 with
+      | true, true -> 0
+      | true, false -> 1
+      | false, true -> -1
+      | _ -> TS.compare t1 t2
 
   let swap h i i' =
     let t = Array.unsafe_get h.arr i in
