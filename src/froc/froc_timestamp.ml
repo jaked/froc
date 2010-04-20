@@ -22,8 +22,10 @@ let debug = ref ignore
 let set_debug f = debug := f
 
 type t = {
+  mutable id : int;
   mutable spliced_out : bool;
   mutable next : t;
+  mutable prev : t;
   mutable cleanup : (unit -> unit) list;
 }
 
@@ -34,8 +36,9 @@ let check t =
   then raise (Invalid_argument "spliced out timestamp")
 
 let empty () =
-  let rec s = { spliced_out = false; next = s; cleanup = [] } in
-  { spliced_out = false; next = s; cleanup = [] }
+  let rec h = { id = 0; spliced_out = false; next = t; prev = h; cleanup = [] }
+  and t = { id = max_int; spliced_out = false; next = t; prev = h; cleanup = [] } in
+  h
 
 let timeline = ref (empty ())
 let now = ref !timeline
@@ -54,11 +57,55 @@ let init () =
   timeline := empty ();
   now := !timeline
 
+(*
+  the following implements Bender et al.'s algorithm for order
+  maintenance (the one-level version). see
+  
+    http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.9.198
+*)
+
+let tau_factor = 1.41421
+
+let renumber t =
+  let rec find_range lo hi mask tau count =
+    let lo_id = lo.id land (lnot mask) in
+    let hi_id = lo_id lor mask in
+    let rec lo_loop lo count =
+      let lo_prev = lo.prev in
+      if lo_prev.id < lo_id || lo_prev.prev == lo_prev
+      then lo, count
+      else lo_loop lo_prev (count + 1) in
+    let rec hi_loop hi count =
+      let hi_next = hi.next in
+      if hi_next.id > hi_id || hi_next.next == hi_next
+      then hi, count
+      else hi_loop hi_next (count + 1) in
+    let lo, count = lo_loop lo count in
+    let hi, count = hi_loop hi count in
+    let size = mask + 1 in
+    let density = float_of_int count /. float_of_int size in
+    if density < tau
+    then (lo, hi, lo_id, count, size)
+    else
+      let mask = mask * 2 + 1 in
+      if mask = max_int then failwith "out of timestamps";
+      find_range lo hi mask (tau /. tau_factor) count in
+  let (lo, hi, lo_id, count, size) = find_range t t 1 (1. /. tau_factor) 1 in
+  let incr = size / count in
+  let rec ren_loop t id =
+    t.id <- id;
+    if t != hi then ren_loop t.next (id + incr) in
+  ren_loop lo lo_id
+
 let tick () =
   let t = !now in
   check t;
-  let t' = { spliced_out = false; next = t.next; cleanup = [] } in
+  let id =  t.id + (t.next.id - t.id) / 2 in
+  let t' = { id = id; spliced_out = false; next = t.next; prev = t; cleanup = [] } in
+  t.next.prev <- t';
   t.next <- t';
+  if id = t.id
+  then renumber t;
   now := t';
   t'
 
@@ -69,8 +116,8 @@ let add_cleanup t cleanup =
 let splice_out t1 t2 =
   check t1;
   check t2;
+  if t1.id >= t2.id then raise (Invalid_argument "t1 >= t2");
   let rec loop t =
-    if t == t.next then raise (Invalid_argument "t1 >= t2");
     if t == t2 then ()
     else begin
       List.iter (fun c -> c ()) t.cleanup;
@@ -79,18 +126,13 @@ let splice_out t1 t2 =
       loop t.next
     end in
   loop t1.next;
-  t1.next <- t2
+  t1.next <- t2;
+  t2.prev <- t1
 
 let compare t1 t2 =
   check t1;
   check t2;
-  if t1 == t2 then 0
-  else 
-    let rec loop t =
-      if t == t.next then 1
-      else if t == t2 then -1
-      else loop t.next in
-    loop t1.next
+  compare t1.id t2.id
 
 let eq t1 t2 =
   check t1;
