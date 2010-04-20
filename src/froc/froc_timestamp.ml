@@ -100,7 +100,11 @@ let renumber t =
 let tick () =
   let t = !now in
   check t;
-  let id =  t.id + (t.next.id - t.id) / 2 in
+  let next_id = t.next.id in
+  let id =
+    let incr = int_of_float (sqrt (float_of_int (next_id - t.id))) in
+    let id = t.id + incr in
+    if id = next_id then t.id else id in (* be careful of sqrt(1) = 1; t'.id must = t.id *)
   let t' = { id = id; spliced_out = false; next = t.next; prev = t; cleanup = [] } in
   t.next.prev <- t';
   t.next <- t';
