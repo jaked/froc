@@ -151,7 +151,7 @@ module PQ : sig
   val remove_min : t -> unit
 end =
 struct
-  (* derived from module H in react.ml *)
+  (* derived from module H in react.ml, Copyright Daniel C. Bünzli. *)
 
   type t = { mutable arr : reader array; mutable len : int }
 
@@ -161,14 +161,13 @@ struct
 
   let size t = t.len
 
-  let compare h i i' =
-    (* spliced-out timestamps sort greater than everything *)
+  let compare_down h i i' =
     let t1 = (Array.unsafe_get h.arr i).start in
     let t2 = (Array.unsafe_get h.arr i').start in
     match TS.is_spliced_out t1, TS.is_spliced_out t2 with
       | true, true -> 0
-      | true, false -> 1
-      | false, true -> -1
+      | true, false -> -1
+      | false, true -> 1
       | _ -> TS.compare t1 t2
 
   let swap h i i' =
@@ -178,11 +177,6 @@ struct
 
   let rem_last h = let l = h.len - 1 in (h.len <- l; Array.unsafe_set h.arr l (Obj.magic None))
 
-  let rec up h i =
-    if i = 0 then () else
-    let p = (i - 1) / 2 in                                  (* parent index. *)
-    if compare h i p < 0 then (swap h i p; up h p)
-
   let rec down h i =
     let last = size h - 1 in
     let start = 2 * i in
@@ -190,11 +184,25 @@ struct
     let r = start + 2 in                               (* right child index. *)
     if l > last then () (* no child, stop *) else
     let child =                                  (* index of smallest child. *)
-      if r > last then l else (if compare h l r < 0 then l else r)
+      if r > last then l else (if compare_down h l r < 0 then l else r)
     in
-    if compare h i child > 0 then (swap h i child; down h child)
+    if compare_down h i child > 0 then (swap h i child; down h child)
 
-  let rebuild h = for i = (size h - 2) / 2 downto 0 do down h i done
+  let up h i =
+    let rec aux h i last_spliced_out =
+      if i = 0 then (if last_spliced_out then down h 0) else
+      let p = (i - 1) / 2 in                                (* parent index. *)
+      let t1 = (Array.unsafe_get h.arr i).start in
+      let t2 = (Array.unsafe_get h.arr p).start in
+      match TS.is_spliced_out t1, TS.is_spliced_out t2 with
+        | false, false ->
+            if TS.compare t1 t2 < 0 then (swap h i p; aux h p false) else
+              (if last_spliced_out then down h i)
+        | false, true ->
+            swap h i p; aux h p true
+        | true, _ -> assert false
+    in
+    aux h i false
 
   let grow h =
     let len = 2 * h.len + 1 in
