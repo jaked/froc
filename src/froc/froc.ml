@@ -152,7 +152,7 @@ let collect f init t =
       match r with Some r -> st := r; send_result s' r | _ -> ());
   t'
 
-let switch_ee ee =
+let join_e ee =
   let t, s = make_event () in
   let c = ref no_cancel in
   notify_result_e ee
@@ -196,9 +196,9 @@ let notify_result_b_cancel = notify_result_cancel
 
 let hash_behavior = hash
 
-let switch_bb ?eq bb = bind ?eq bb (fun b -> b)
+let join_b ?eq bb = bind ?eq bb (fun b -> b)
 
-let switch_be ?eq b e =
+let switch ?eq b e =
   let bt, bu = make_changeable ?eq () in
   let c = ref (connect_cancel bu b) in
   notify_result_e e
@@ -207,7 +207,7 @@ let switch_be ?eq b e =
        | Fail e -> cancel !c; c := no_cancel; write_exn bu e);
   bt
 
-let until ?eq b e = switch_be ?eq b (next e)
+let until ?eq b e = switch ?eq b (next e)
 
 let hold_result ?eq init t =
   let bt, bu = make_changeable ?eq ~result:init () in

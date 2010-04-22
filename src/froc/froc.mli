@@ -278,19 +278,19 @@ val collect : ('b -> 'a -> 'b) -> 'b -> 'a event -> 'b event
      state.
   *)
 
-val switch_ee : 'a event event -> 'a event
-  (** [switch_ee ee] fires whenever the event last fired from [ee] fires *)
+val join_e : 'a event event -> 'a event
+  (** [join_e ee] fires whenever the event last fired from [ee] fires *)
 
 val hash_event : 'a event -> int
   (** A hash function for events. *)
 
 (** {2 Derived operations} *)
 
-val switch_bb : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
-  (** [switch_bb b] behaves as whichever behavior is currently the value of [b]. *)
+val join_b : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
+  (** [join_b b] behaves as whichever behavior is currently the value of [b]. *)
 
-val switch_be : ?eq:('a -> 'a -> bool) -> 'a behavior -> 'a behavior event -> 'a behavior
-  (** [switch_be b e] behaves as [b] until [e] fires, then behaves as the last value of [e]. *)
+val switch : ?eq:('a -> 'a -> bool) -> 'a behavior -> 'a behavior event -> 'a behavior
+  (** [switch b e] behaves as [b] until [e] fires, then behaves as the last value of [e]. *)
 
 val until : ?eq:('a -> 'a -> bool) -> 'a behavior -> 'a behavior event -> 'a behavior
   (** [until b e] behaves as [b] until [e] fires [b'], then behaves as [b'] *)
