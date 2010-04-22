@@ -51,12 +51,13 @@ val connect : 'a u -> 'a t -> unit
 val cleanup : (unit -> unit) -> unit
 
 type cancel = unit -> unit
+val make_cancel : (unit -> unit) -> cancel
+val no_cancel : cancel
+val cancel : cancel -> unit
 
 val notify_cancel : 'a t -> ('a -> unit) -> cancel
 val notify_result_cancel : 'a t -> ('a result -> unit) -> cancel
 val connect_cancel : 'a u -> 'a t -> cancel
-
-val cancel : cancel -> unit
 
 val make_changeable : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t * 'a u
 val make_constant : 'a result -> 'a t

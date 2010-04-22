@@ -66,10 +66,10 @@ let send_exn s e = send_result s (Fail e)
 
 let notify_result_e_cancel t f =
   match repr_of_event t with
-    | Never -> ignore
+    | Never -> no_cancel
     | Occurs o ->
         let dl = Dlist.add_after o.e_deps f in
-        fun () -> Dlist.remove dl
+        make_cancel (fun () -> Dlist.remove dl)
 
 let notify_result_e t f =
   let cancel = notify_result_e_cancel t f in
@@ -93,14 +93,15 @@ let hash_event t =
     | Occurs o -> o.e_id
 
 let next t =
+<<<<<<< HEAD:src/froc/froc.ml
   let t', s' = make_event () in
-  let c = ref (ignore in
+  let c = ref no_cancel in
   c :=
     notify_result_e_cancel t
       (fun r ->
          cancel !c;
-         c := ignore;
-         send_result s' r;
+         c := no_cancel;
+         send_result s r;
          (* XXX future deps are still added; would be better to become Never *)
          Dlist.clear (occurs_of_event_sender s').e_deps);
   t'
@@ -194,7 +195,7 @@ let switch_be ?eq b e =
   notify_result_e e
     (function
        | Value b -> cancel !c; c := connect_cancel bu b
-       | Fail e -> cancel !c; write_exn bu e);
+       | Fail e -> cancel !c; c := no_cancel; write_exn bu e);
   bt
 
 let until ?eq b e = switch_be ?eq b (next e)

@@ -117,6 +117,8 @@ let read t =
     | Fail e -> raise e
 
 type cancel = unit -> unit
+let make_cancel f = f
+let no_cancel = ignore
 let cancel c = c ()
 
 let add_dep_cancel t f =
@@ -124,7 +126,7 @@ let add_dep_cancel t f =
     | Constant _ -> ignore
     | Changeable c ->
         let dl = Dlist.add_after c.deps f in
-        fun () -> Dlist.remove dl
+        make_cancel (fun () -> Dlist.remove dl)
 
 let add_dep ts t dep =
   let cancel = add_dep_cancel t dep in

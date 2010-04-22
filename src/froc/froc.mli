@@ -48,6 +48,15 @@
 val init : unit -> unit
   (** Initialize the library. Must be called before any other function. *)
 
+type cancel
+  (** Type of handles to listener registrations. *)
+
+val no_cancel : cancel
+  (** Dummy cancel. *)
+
+val cancel : cancel -> unit
+  (** Cancels a listener registration using the given handle. *)
+
 (** {2 Behaviors} *)
 
 type 'a behavior
@@ -135,13 +144,6 @@ val read_result : 'a behavior -> 'a result
      Same as [read] but returns a result instead of possibly raising
      an exception.
   *)
-
-type cancel
-  (** Type of handles to listener registrations. *)
-
-val cancel : cancel -> unit
-  (** Cancels a listener registration using the given handle. *)
-
 
 val notify_b : 'a behavior -> ('a -> unit) -> unit
   (**
