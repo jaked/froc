@@ -218,6 +218,9 @@ type -'a event_sender
 val make_event : unit -> 'a event * 'a event_sender
   (** Makes a new channel for events of type ['a]. *)
 
+val never : 'a event
+  (** An event which never occurs. *)
+
 val notify_e : 'a event -> ('a -> unit) -> unit
   (**
      Adds a listener on the channel, which is called whenever a value
@@ -253,13 +256,8 @@ val send_exn : 'a event_sender -> exn -> unit
 val send_result : 'a event_sender -> 'a result -> unit
   (** [send_result e r] calls the listeners of the associated event with [r]. *)
 
-val hash_event : 'a event -> int
-  (** A hash function for events. *)
-
-(** {2 Derived operations} *)
-
-val switch : 'a behavior behavior -> 'a behavior
-  (** [switch b] behaves as whichever behavior is currently the value of [b]. *)
+val next : 'a event -> 'a event
+  (** [next e] fires just the next occurence of [e]. *)
 
 val merge : 'a event list -> 'a event
   (** [merge es] is an event that fires whenever any of the events in [e] fire. *)
@@ -277,6 +275,20 @@ val collect : ('b -> 'a -> 'b) -> 'b -> 'a event -> 'b event
      v], the event fires [s'], and [s'] becomes the new internal
      state.
   *)
+
+val hash_event : 'a event -> int
+  (** A hash function for events. *)
+
+(** {2 Derived operations} *)
+
+val switch_bb : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
+  (** [switch_bb b] behaves as whichever behavior is currently the value of [b]. *)
+
+val switch_be : ?eq:('a -> 'a -> bool) -> 'a behavior -> 'a behavior event -> 'a behavior
+  (** [switch_be b e] behaves as [b] until [e] fires, then behaves as the last value of [e]. *)
+
+val until : ?eq:('a -> 'a -> bool) -> 'a behavior -> 'a behavior event -> 'a behavior
+  (** [until b e] behaves as [b] until [e] fires [b'], then behaves as [b'] *)
 
 val hold : ?eq:('a -> 'a -> bool) -> 'a -> 'a event -> 'a behavior
   (**

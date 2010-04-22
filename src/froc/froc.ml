@@ -92,6 +92,19 @@ let hash_event t =
     | Never -> 0
     | Occurs o -> o.e_id
 
+let next t =
+  let t', s' = make_event () in
+  let c = ref (ignore in
+  c :=
+    notify_result_e_cancel t
+      (fun r ->
+         cancel !c;
+         c := ignore;
+         send_result s' r;
+         (* XXX future deps are still added; would be better to become Never *)
+         Dlist.clear (occurs_of_event_sender s').e_deps);
+  t'
+
 let merge ts =
   let t, s = make_event () in
   List.iter (fun t' -> notify_result_e t' (send_result s)) ts;
@@ -173,7 +186,18 @@ let notify_result_b_cancel = notify_result_cancel
 
 let hash_behavior = hash
 
-let switch bb = bb >>= fun b -> b
+let switch_bb ?eq bb = bind ?eq bb (fun b -> b)
+
+let switch_be ?eq b e =
+  let bt, bu = make_changeable ?eq () in
+  let c = ref (connect_cancel bu b) in
+  notify_result_e e
+    (function
+       | Value b -> cancel !c; c := connect_cancel bu b
+       | Fail e -> cancel !c; write_exn bu e);
+  bt
+
+let until ?eq b e = switch_be ?eq b (next e)
 
 let hold_result ?eq init t =
   let bt, bu = make_changeable ?eq ~result:init () in
