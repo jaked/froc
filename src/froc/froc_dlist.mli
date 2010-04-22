@@ -41,3 +41,9 @@ val iter : ('a -> unit) -> 'a t -> unit
      is skipped; it is expected that [iter] is called on the dummy
      element returned from [empty].
   *)
+
+val clear : 'a t -> unit
+  (**
+     Clears the items in the list. Tt is expected that [clear] is
+     called on the dummy element returned from [empty].
+  *)

@@ -43,3 +43,7 @@ let iter f d =
     if not (t == d)
     then (f t.data; loop t.next) in
   loop d.next
+
+let clear d =
+  d.next <- d;
+  d.prev <- d
