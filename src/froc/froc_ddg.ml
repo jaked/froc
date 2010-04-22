@@ -116,16 +116,31 @@ let read t =
     | Value v -> v
     | Fail e -> raise e
 
-let add_dep ts t dep =
+type cancel = unit -> unit
+let cancel c = c ()
+
+let add_dep_cancel t f =
   match repr_of_t t with
-    | Constant _ -> ()
+    | Constant _ -> ignore
     | Changeable c ->
-        let dl = Dlist.add_after c.deps dep in
-        let cancel () = Dlist.remove dl in
-        TS.add_cleanup ts cancel
+        let dl = Dlist.add_after c.deps f in
+        fun () -> Dlist.remove dl
+
+let add_dep ts t dep =
+  let cancel = add_dep_cancel t dep in
+  TS.add_cleanup ts cancel
+
+let notify_result_cancel t f =
+  add_dep_cancel t f
 
 let notify_result t f =
   add_dep (TS.tick ()) t f
+
+let notify_cancel t f =
+  notify_result_cancel t
+    (function
+       | Fail _ -> ()
+       | Value v -> f v)
 
 let notify t f =
   notify_result t
@@ -249,6 +264,10 @@ let add_reader t read =
   let r = { read = read; start = start; finish = TS.tick () } in
   let dep _ = enqueue r in
   add_dep start t dep
+
+let connect_cancel u t' =
+  write_result u (read_result t');
+  add_dep_cancel t' (write_result_no_eq u)
 
 let connect u t' =
   write_result u (read_result t');

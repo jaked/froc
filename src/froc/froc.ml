@@ -64,13 +64,22 @@ let send_result s r =
 let send s v = send_result s (Value v)
 let send_exn s e = send_result s (Fail e)
 
-let notify_result_e t f =
+let notify_result_e_cancel t f =
   match repr_of_event t with
-    | Never -> ()
+    | Never -> ignore
     | Occurs o ->
         let dl = Dlist.add_after o.e_deps f in
-        let cancel () = Dlist.remove dl in
-        TS.add_cleanup (TS.tick ()) cancel
+        fun () -> Dlist.remove dl
+
+let notify_result_e t f =
+  let cancel = notify_result_e_cancel t f in
+  TS.add_cleanup (TS.tick ()) cancel
+
+let notify_e_cancel t f =
+  notify_result_e_cancel t
+    (function
+       | Value v -> f v
+       | Fail _ -> ())
 
 let notify_e t f =
   notify_result_e t
@@ -158,8 +167,9 @@ let send_exn t e = send_result t (Fail e)
 type 'a behavior = 'a t
 
 let notify_b = notify
-
+let notify_b_cancel = notify_cancel
 let notify_result_b = notify_result
+let notify_result_b_cancel = notify_result_cancel
 
 let hash_behavior = hash
 

@@ -136,17 +136,37 @@ val read_result : 'a behavior -> 'a result
      an exception.
   *)
 
+type cancel
+  (** Type of handles to listener registrations. *)
+
+val cancel : cancel -> unit
+  (** Cancels a listener registration using the given handle. *)
+
+
 val notify_b : 'a behavior -> ('a -> unit) -> unit
   (**
      Adds a listener for the value of a behavior, which is called
      whenever the value changes. When the behavior fails the listener
-     is not called.
+     is not called. The notification is implicitly cancelled when the
+     calling context is re-run.
+  *)
+
+val notify_b_cancel : 'a behavior -> ('a -> unit) -> cancel
+  (**
+     Same as [notify_b], but not implicitly cancelled; an explicit
+     cancel handle is returned.
   *)
 
 val notify_result_b : 'a behavior -> ('a result -> unit) -> unit
   (**
      Same as [notify_b] but the listener is called with a result when
      the value changes or when the behavior fails.
+  *)
+
+val notify_result_b_cancel : 'a behavior -> ('a result -> unit) -> cancel
+  (**
+     Same as [notify_b_cancel] but the listener is called with a
+     result when the value changes or when the behavior fails.
   *)
 
 val cleanup : (unit -> unit) -> unit
@@ -201,12 +221,26 @@ val make_event : unit -> 'a event * 'a event_sender
 val notify_e : 'a event -> ('a -> unit) -> unit
   (**
      Adds a listener on the channel, which is called whenever a value
-     is sent on it. When a failure is sent the listener is not called.
+     is sent on it. When a failure is sent the listener is not
+     called. The notification is implicitly cancelled when the calling
+     context is re-run.
+  *)
+
+val notify_e_cancel : 'a event -> ('a -> unit) -> cancel
+  (**
+     Same as [notify_e], but not implicitly cancelled; an explicit
+     cancel handle is returned.
   *)
 
 val notify_result_e : 'a event -> ('a result -> unit) -> unit
   (**
      Same as [notify_e] but the listener is called with a result when
+     a value or a failure is sent.
+  *)
+
+val notify_result_e_cancel : 'a event -> ('a result -> unit) -> cancel
+  (**
+     Same as [notify_e_cancel] but the listener is called with a result when
      a value or a failure is sent.
   *)
 
