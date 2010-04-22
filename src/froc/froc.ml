@@ -93,7 +93,6 @@ let hash_event t =
     | Occurs o -> o.e_id
 
 let next t =
-<<<<<<< HEAD:src/froc/froc.ml
   let t', s' = make_event () in
   let c = ref no_cancel in
   c :=
@@ -101,7 +100,7 @@ let next t =
       (fun r ->
          cancel !c;
          c := no_cancel;
-         send_result s r;
+         send_result s' r;
          (* XXX future deps are still added; would be better to become Never *)
          Dlist.clear (occurs_of_event_sender s').e_deps);
   t'
