@@ -41,7 +41,7 @@ let remove t =
 let iter f d =
   let rec loop t =
     if not (t == d)
-    then (f t.data; loop t.next) in
+    then (let next = t.next in f t.data; loop next) in
   loop d.next
 
 let clear d =
