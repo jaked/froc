@@ -152,6 +152,15 @@ let collect f init t =
       match r with Some r -> st := r; send_result s' r | _ -> ());
   t'
 
+let switch_ee ee =
+  let t, s = make_event () in
+  let c = ref no_cancel in
+  notify_result_e ee
+    (function
+       | Value e -> cancel !c; c := notify_result_e_cancel e (send_result s)
+       | Fail e -> cancel !c; c := no_cancel; send_exn s e);
+  t
+
 let q = Queue.create ()
 
 let init () =

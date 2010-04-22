@@ -278,6 +278,9 @@ val collect : ('b -> 'a -> 'b) -> 'b -> 'a event -> 'b event
      state.
   *)
 
+val switch_ee : 'a event event -> 'a event
+  (** [switch_ee ee] fires whenever the event last fired from [ee] fires *)
+
 val hash_event : 'a event -> int
   (** A hash function for events. *)
 
