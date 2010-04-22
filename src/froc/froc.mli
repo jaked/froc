@@ -128,6 +128,12 @@ val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a behavior) -> ('a -> 'b
      more efficient.
   *)
 
+val join_b : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
+  (** [join_b b] behaves as whichever behavior is currently the value of [b]. *)
+
+val fix_b : ?eq:('a -> 'a -> bool) -> ('a behavior -> 'a behavior) -> 'a behavior
+  (** [fix_b f] returns the fixpoint of [f]. *)
+
 val read : 'a behavior -> 'a
   (**
 
@@ -285,9 +291,6 @@ val hash_event : 'a event -> int
   (** A hash function for events. *)
 
 (** {2 Derived operations} *)
-
-val join_b : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
-  (** [join_b b] behaves as whichever behavior is currently the value of [b]. *)
 
 val switch : ?eq:('a -> 'a -> bool) -> 'a behavior -> 'a behavior event -> 'a behavior
   (** [switch b e] behaves as [b] until [e] fires, then behaves as the last value of [e]. *)

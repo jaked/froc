@@ -196,6 +196,14 @@ let notify_result_b_cancel = notify_result_cancel
 
 let hash_behavior = hash
 
+let fix_b ?eq bf =
+  let bt, bu = make_changeable ?eq () in
+  begin
+    try connect bu (bf bt)
+    with e -> write_exn bu e
+  end;
+  bt
+
 let join_b ?eq bb = bind ?eq bb (fun b -> b)
 
 let switch ?eq b e =
