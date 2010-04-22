@@ -131,9 +131,6 @@ val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a behavior) -> ('a -> 'b
 val join_b : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
   (** [join_b b] behaves as whichever behavior is currently the value of [b]. *)
 
-val fix_b : ?eq:('a -> 'a -> bool) -> ('a behavior -> 'a behavior) -> 'a behavior
-  (** [fix_b f] returns the fixpoint of [f]. *)
-
 val read : 'a behavior -> 'a
   (**
 
