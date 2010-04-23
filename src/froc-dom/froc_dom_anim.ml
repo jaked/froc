@@ -34,6 +34,14 @@ let disk (cx, cy) radius color : shape =
     ctx#arc cx cy radius 0. (2. *. Javascript.Math.pi) true;
     ctx#fill)
 
+let filled_poly points color : shape =
+  (fun ctx ->
+     ctx#_set_fillStyle color;
+     ctx#beginPath;
+     List.iter (fun (x, y) -> ctx#lineTo x y) points;
+     ctx#closePath;
+     ctx#fill)
+
 let draw canvas instrs =
   let ctx = canvas#getContext "2d" in
   ctx#clearRect 0. 0. (float_of_int canvas#_get_width) (float_of_int canvas#_get_height);

@@ -26,4 +26,6 @@ val color : ?a:int -> int -> int -> int -> color
 
 val disk : point -> float -> color -> shape
 
+val filled_poly : point list -> color -> shape
+
 val attach : Dom.canvas -> shape list Froc.behavior -> unit
