@@ -1,4 +1,4 @@
-DIRS=clicks follow-the-mouse wheres-the-mouse orbit-mouse
+DIRS=clicks follow-the-mouse wheres-the-mouse orbit-mouse quickhull
 
 all:
 	for dir in $(DIRS); do \
