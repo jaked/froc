@@ -329,7 +329,7 @@ let rec prop ?until () =
             r.read ();
             ignore (Stack.pop finish);
             TS.splice_out (TS.get_now ()) r.finish;
-            prop ()
+            prop ?until ()
 
 let propagate () =
   let now' = TS.get_now () in
