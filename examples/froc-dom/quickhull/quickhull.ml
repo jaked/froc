@@ -84,7 +84,7 @@ struct
         | Nil -> F.return true
         | Cons (_, t) -> length_less_than (n - 1) t
 
-  let rec map f =
+  let map f =
     let f = IFDEF STATS THEN fun x -> incr S.maps; f x ELSE f ENDIF in
     let memo = IFDEF MEMO THEN F.memo ~hash:F.hash_behavior () ELSE fun f -> f ENDIF in
     let rec map l =
@@ -93,7 +93,7 @@ struct
         | Cons (h, t) -> cons (f h) (memo map t) in
     memo map
 
-  let rec filter f =
+  let filter f =
     let f = IFDEF STATS THEN fun x -> incr S.filters; f x ELSE f ENDIF in
     let memo = IFDEF MEMO THEN F.memo ~hash:F.hash_behavior () ELSE fun f -> f ENDIF in
     let rec filter l =
@@ -104,7 +104,7 @@ struct
             if f h then cons h t else t in
     memo filter
 
-  let rec max cmp =
+  let max cmp =
     let cmp = IFDEF STATS THEN fun a b -> incr S.maxs; cmp a b ELSE cmp ENDIF in
     let memo = IFDEF MEMO THEN F.memo ~hash:F.hash_behavior () ELSE fun f -> f ENDIF in
     let rec max l =
