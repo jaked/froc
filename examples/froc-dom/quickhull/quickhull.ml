@@ -3,8 +3,6 @@ module F = Froc
 module Fd = Froc_dom
 module Fda = Froc_dom_anim
 
-DEFINE DEBUG
-
 IFDEF DEBUG
 THEN
 class type console =
@@ -13,20 +11,6 @@ object
 end
 let console = (Ocamljs.var "console" : console)
 ENDIF
-
-DEFINE STATS
-
-IFDEF STATS
-THEN
-module S =
-struct
-  let max_b = ref 0
-  let filter_b = ref 0
-  let ticks = ref 0
-end
-ENDIF
-
-(* DEFINE MEMO *)
 
 let (>>=) = F.(>>=)
 
@@ -41,8 +25,8 @@ struct
   let cons h t = F.return (Cons (h, t))
 
   let rec of_list = function
-    | [] -> F.return Nil
-    | h :: t -> F.return (Cons (h, of_list t))
+    | [] -> nil ()
+    | h :: t -> cons h (of_list t)
 
   let rec to_list l =
     l >>= function
@@ -50,41 +34,49 @@ struct
       | Cons (h, t) ->
           to_list t >>= fun t -> F.return (h :: t)
 
-  let max_b cmp =
-    let memo =
-      IFDEF MEMO
-      THEN F.memo ~hash:F.hash_behavior ()
-      ELSE fun f -> f ENDIF in
-    let rec max l =
-      IFDEF STATS THEN incr S.max_b ENDIF;
+  let rec map_b f l =
+    l >>= function
+      | Nil -> nil ()
+      | Cons (h, t) ->
+          let t = map_b f t in
+          cons (F.lift f h) t
+
+  (*
+    the idea is to recursively split the list in half, maximize each
+    sublist, then compare the maximums. we should need only O(log N)
+    comparisons to propagate a change.
+  *)
+  let rec max_b cmp l =
+    let rec split l odd even =
       l >>= function
-        | Nil -> F.fail (Invalid_argument "empty list")
+        | Nil -> F.return (odd, even)
         | Cons (h, t) ->
             t >>= function
-              | Nil -> h
-              | _ ->
-                  let m = memo max t in
-                  F.lift2 cmp h m >>= function
-                    | 1 -> h
-                    | _ -> m in
-    memo max
+              | Nil -> F.return (cons h odd, even)
+              | Cons (h2, t) -> split t (cons h odd) (cons h2 even) in
+    split l (nil ()) (nil ()) >>= fun (odd, even) ->
+      F.bind2 odd even begin fun odd' even' ->
+        match odd', even' with
+          | Nil, Nil -> F.fail (Invalid_argument "empty list")
+          | Nil, Cons (h, _) -> h
+          | Cons (h, _), Nil -> h
+          | _ ->
+              let mo = max_b cmp odd in
+              let me = max_b cmp even in
+              F.lift2 cmp mo me >>= function
+                | 1 -> mo
+                | _ -> me
+      end
 
-  let filter_b f =
-    let memo =
-      IFDEF MEMO
-      THEN F.memo ~hash:F.hash_behavior ()
-      ELSE fun f -> f ENDIF in
-    let rec filt l =
-      IFDEF STATS THEN incr S.filter_b ENDIF;
-      l >>= function
-        | Nil -> F.return Nil
-        | Cons (h, t) ->
-            let t = memo filt t in
-            F.lift f h >>= fun b ->
-              if b
-              then F.return (Cons (h, t))
-              else t in
-    memo filt
+  let rec filter_b f l =
+    l >>= function
+      | Nil -> nil ()
+      | Cons (h, t) ->
+          let t = filter_b f t in
+          F.lift f h >>= fun b ->
+            if b
+            then cons h t
+            else t
 
   let rec length_less_than n l =
     if n <= 0
@@ -150,16 +142,18 @@ end
 let get id = D.document#getElementById id
 
 let onload () =
-  let canvas = (get "canvas" : D.canvas) in
+  let min = 0. in
+  let max = 500. in
 
   let ticks = Fd.ticks 20. in
 
-  let min = 0. in
-  let max = 300. in
-  let init = 150. in
+  let random_color () =
+    Fda.color (Random.int 255) (Random.int 255) (Random.int 255) in
 
-  let make_point () =
-    let p v =
+  let bouncing () =
+    let coord () =
+      let v = Random.float 5. in
+      let init = Random.float max in
       F.hold init
         (F.map fst
            (F.collect
@@ -169,45 +163,45 @@ let onload () =
                p, v)
               (init, v)
               ticks)) in
-    let x = p (Random.float 5.) in
-    let y = p (Random.float 5.) in
-    F.blift2 x y (fun x y -> x, y) in
+    let x = coord () and y = coord () in
+    let c = random_color () in
+    F.blift2 x y (fun x y -> x, y, c) in
 
-  let points = [
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-    make_point ();
-  ] in
+  let stationary () =
+    F.return (Random.float max, Random.float max, random_color ()) in
 
-  let disks =
-    List.map
-      (fun p ->
-         let c = Fda.color (Random.int 255) (Random.int 255) (Random.int 255) in
-         F.blift p (fun (x, y) -> Fda.disk (x, y) 5. c))
-      points in
+  let clicks =
+    F.merge [
+      F.map (fun () -> `Stationary) (Fd.clicks (get "stationary"));
+      F.map (fun () -> `Bouncing) (Fd.clicks (get "bouncing"));
+      F.map (fun () -> `Remove) (Fd.clicks (get "remove"));
+    ] in
 
-  let hull =
-    L.to_list (QH.hull (L.of_list points)) >>=
+  let points : (float * float * Fda.color) F.behavior L.t =
+    F.join_b
+      (F.hold (L.nil ())
+         (F.map List.hd
+            (F.collect
+               (function
+                  | [] -> (fun _ -> assert false)
+                  | h :: t as hist ->
+                      function
+                        | `Stationary -> L.cons (stationary ()) h :: hist
+                        | `Bouncing -> L.cons (bouncing ()) h :: hist
+                        | `Remove -> match t with [] -> hist | _ -> t)
+               [ L.nil() ]
+               clicks))) in
+
+  let disks : Fda.shape list F.behavior =
+    L.to_list points >>=
+      F.liftN (List.map (fun (x, y, c) -> Fda.disk (x, y) 5. c)) in
+
+  let hull : Fda.shape F.behavior =
+    L.to_list (QH.hull (L.map_b (fun (x, y, c) -> x, y) points)) >>=
       F.liftN (fun hull -> Fda.filled_poly hull (Fda.color 128 0 0)) in
 
-  let shapes =
-    F.bindN disks
-      (fun disks ->
-         hull >>= fun hull ->
-           IFDEF STATS THEN
-             incr S.ticks;
-             console#log (Printf.sprintf "ticks = %d; filter_b = %d; max_b = %d" !S.ticks !S.filter_b !S.max_b)
-           ENDIF;
-           F.return (hull :: disks)) in
-  Froc_dom_anim.attach canvas shapes
+  let shapes = F.bind2 disks hull (fun disks hull -> F.return (hull :: disks)) in
+  Froc_dom_anim.attach (get "canvas") shapes
 
 ;;
 
