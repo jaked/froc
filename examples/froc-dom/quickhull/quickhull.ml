@@ -3,6 +3,8 @@ module F = Froc
 module Fd = Froc_dom
 module Fda = Froc_dom_anim
 
+DEFINE DEBUG
+
 IFDEF DEBUG
 THEN
 class type console =
@@ -11,6 +13,46 @@ object
 end
 let console = (Ocamljs.var "console" : console)
 ENDIF
+
+DEFINE STATS
+
+IFDEF STATS
+THEN
+module S = 
+struct
+  let ticks = ref 0
+  let maps = ref 0
+  let filters = ref 0
+  let maxs = ref 0
+end
+ENDIF
+
+DEFINE FIXED_RANDOM
+
+IFDEF FIXED_RANDOM
+THEN
+module Random =
+struct
+  let int = Random.int
+
+  let a = [|
+    1.; 2.; 3.; 4.; 1.; 2.; 3.; 4.; 1.; 2.; 3.; 4.; 1.; 2.; 3.; 4.; 1.; 2.; 3.; 4.; 1.; 2.; 3.; 4.;
+  |]
+  let ai = ref 0
+  let b = [|
+    100.; 200.; 300.; 400.; 210.; 110.; 410.; 310.; 320.; 220.; 120.; 420.; 130.; 230.; 330.; 430.; 140.; 240.; 340.; 440.;
+  |]
+  let bi = ref 0
+
+  let float f =
+    match f with
+      | 5. -> let f = a.(!ai) in incr ai; f
+      | 500. -> let f = b.(!bi) in incr bi; f
+      | _ -> assert false
+end
+ENDIF
+
+DEFINE MEMO
 
 let (>>=) = F.(>>=)
 
@@ -34,50 +76,6 @@ struct
       | Cons (h, t) ->
           to_list t >>= fun t -> F.return (h :: t)
 
-  let rec map_b f l =
-    l >>= function
-      | Nil -> nil ()
-      | Cons (h, t) ->
-          let t = map_b f t in
-          cons (F.lift f h) t
-
-  (*
-    the idea is to recursively split the list in half, maximize each
-    sublist, then compare the maximums. we should need only O(log N)
-    comparisons to propagate a change.
-  *)
-  let rec max_b cmp l =
-    let rec split l odd even =
-      l >>= function
-        | Nil -> F.return (odd, even)
-        | Cons (h, t) ->
-            t >>= function
-              | Nil -> F.return (cons h odd, even)
-              | Cons (h2, t) -> split t (cons h odd) (cons h2 even) in
-    split l (nil ()) (nil ()) >>= fun (odd, even) ->
-      F.bind2 odd even begin fun odd' even' ->
-        match odd', even' with
-          | Nil, Nil -> F.fail (Invalid_argument "empty list")
-          | Nil, Cons (h, _) -> h
-          | Cons (h, _), Nil -> h
-          | _ ->
-              let mo = max_b cmp odd in
-              let me = max_b cmp even in
-              F.lift2 cmp mo me >>= function
-                | 1 -> mo
-                | _ -> me
-      end
-
-  let rec filter_b f l =
-    l >>= function
-      | Nil -> nil ()
-      | Cons (h, t) ->
-          let t = filter_b f t in
-          F.lift f h >>= fun b ->
-            if b
-            then cons h t
-            else t
-
   let rec length_less_than n l =
     if n <= 0
     then F.return false
@@ -85,6 +83,44 @@ struct
       l >>= function
         | Nil -> F.return true
         | Cons (_, t) -> length_less_than (n - 1) t
+
+  let rec map f =
+    let f = IFDEF STATS THEN fun x -> incr S.maps; f x ELSE f ENDIF in
+    let memo = IFDEF MEMO THEN F.memo ~hash:F.hash_behavior () ELSE fun f -> f ENDIF in
+    let rec map l =
+      l >>= function
+        | Nil -> nil ()
+        | Cons (h, t) -> cons (f h) (memo map t) in
+    memo map
+
+  let rec filter f =
+    let f = IFDEF STATS THEN fun x -> incr S.filters; f x ELSE f ENDIF in
+    let memo = IFDEF MEMO THEN F.memo ~hash:F.hash_behavior () ELSE fun f -> f ENDIF in
+    let rec filter l =
+      l >>= function
+        | Nil -> nil ()
+        | Cons (h, t) ->
+            let t = memo filter t in
+            if f h then cons h t else t in
+    memo filter
+
+  let rec max cmp =
+    let cmp = IFDEF STATS THEN fun a b -> incr S.maxs; cmp a b ELSE cmp ENDIF in
+    let memo = IFDEF MEMO THEN F.memo ~hash:F.hash_behavior () ELSE fun f -> f ENDIF in
+    let rec max l =
+      l >>= function
+        | Nil -> F.fail (Invalid_argument "empty list")
+        | Cons (h, t) ->
+            t >>= function
+              | Nil -> F.return h
+              | _ ->
+                  let m = memo max t in
+                  m >>= fun m' ->
+                    match cmp h m' with
+                      | 1 -> F.return h
+                      | _ -> m in
+    memo max
+                  
 end
 
 module G =
@@ -115,27 +151,24 @@ module QH =
 struct
   let rec split p1 p2 l hull =
     l >>= function
-      | L.Nil -> F.return (L.Cons (p1, hull))
+      | L.Nil -> L.cons p1 hull
       | _ ->
-          F.bind2 p1 p2 begin fun p1' p2' ->
-            let line_dist = G.line_dist (p1', p2') in
-            let m = L.max_b (fun a b -> compare (line_dist a) (line_dist b)) l in
-            m >>= fun m' ->
-              let left = L.filter_b (G.above_line (p1', m')) l in
-              let right = L.filter_b (G.above_line (m', p2')) l in
-              split p1 m left (split m p2 right hull)
-          end
+          let line_dist = G.line_dist (p1, p2) in
+          L.max (fun a b -> compare (line_dist a) (line_dist b)) l >>= fun m ->
+            let left = L.filter (G.above_line (p1, m)) l in
+            let right = L.filter (G.above_line (m, p2)) l in
+            split p1 m left (split m p2 right hull)
 
   let hull l =
     L.length_less_than 2 l >>= fun b ->
       if b then l
       else
-        let min = L.max_b (fun a b -> -(G.compare a b)) l in
-        let max = L.max_b G.compare l in
-        F.bind2 min max begin fun min' max' ->
-          let upper = L.filter_b (G.above_line (min', max')) l in
-          let lower = L.filter_b (G.above_line (max', min')) l in
-          split min max upper (split max min lower (F.return L.Nil))
+        let min = L.max (fun a b -> -(G.compare a b)) l in
+        let max = L.max G.compare l in
+        F.bind2 min max begin fun min max ->
+          let upper = L.filter (G.above_line (min, max)) l in
+          let lower = L.filter (G.above_line (max, min)) l in
+          split min max upper (split max min lower (L.nil ()))
         end
 end
 
@@ -168,7 +201,7 @@ let onload () =
     F.blift2 x y (fun x y -> x, y, c) in
 
   let stationary () =
-    F.return (Random.float max, Random.float max, random_color ()) in
+    (Random.float max, Random.float max, random_color ()) in
 
   let clicks =
     F.merge [
@@ -177,7 +210,7 @@ let onload () =
       F.map (fun () -> `Remove) (Fd.clicks (get "remove"));
     ] in
 
-  let points : (float * float * Fda.color) F.behavior L.t =
+  let points : (float * float * Fda.color) L.t =
     F.join_b
       (F.hold (L.nil ())
          (F.map List.hd
@@ -187,20 +220,29 @@ let onload () =
                   | h :: t as hist ->
                       function
                         | `Stationary -> L.cons (stationary ()) h :: hist
-                        | `Bouncing -> L.cons (bouncing ()) h :: hist
+                        | `Bouncing -> (bouncing () >>= fun p -> L.cons p h) :: hist
                         | `Remove -> match t with [] -> hist | _ -> t)
                [ L.nil() ]
                clicks))) in
 
   let disks : Fda.shape list F.behavior =
-    L.to_list points >>=
-      F.liftN (List.map (fun (x, y, c) -> Fda.disk (x, y) 5. c)) in
+    F.blift
+      (L.to_list points)
+      (List.map (fun (x, y, c) -> Fda.disk (x, y) 5. c)) in
 
   let hull : Fda.shape F.behavior =
-    L.to_list (QH.hull (L.map_b (fun (x, y, c) -> x, y) points)) >>=
-      F.liftN (fun hull -> Fda.filled_poly hull (Fda.color 128 0 0)) in
+    F.blift
+      (L.to_list (QH.hull (L.map (fun (x, y, c) -> x, y) points)))
+      (fun hull -> Fda.filled_poly hull (Fda.color 128 0 0)) in
 
-  let shapes = F.bind2 disks hull (fun disks hull -> F.return (hull :: disks)) in
+  let shapes = F.bind2 disks hull begin fun disks hull ->
+    IFDEF STATS THEN
+      incr S.ticks;
+      console#log (Printf.sprintf "ticks=%d, maps=%d, filters=%d, maxs=%d" !S.ticks !S.maps !S.filters !S.maxs)
+    ENDIF;
+    F.return (hull :: disks)
+  end in
+
   Froc_dom_anim.attach (get "canvas") shapes
 
 ;;
