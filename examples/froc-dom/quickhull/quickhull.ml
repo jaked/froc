@@ -3,7 +3,7 @@ module F = Froc
 module Fd = Froc_dom
 module Fda = Froc_dom_anim
 
-DEFINE DEBUG
+(* DEFINE DEBUG *)
 
 IFDEF DEBUG
 THEN
@@ -14,7 +14,7 @@ end
 let console = (Ocamljs.var "console" : console)
 ENDIF
 
-DEFINE STATS
+(* DEFINE STATS *)
 
 IFDEF STATS
 THEN
@@ -27,7 +27,7 @@ struct
 end
 ENDIF
 
-DEFINE FIXED_RANDOM
+(* DEFINE FIXED_RANDOM *)
 
 IFDEF FIXED_RANDOM
 THEN
