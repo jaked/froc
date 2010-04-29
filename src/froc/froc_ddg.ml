@@ -136,7 +136,7 @@ let notify_result_cancel t f =
   add_dep_cancel t f
 
 let notify_result t f =
-  add_dep (TS.tick ()) t f
+  add_dep (TS.tick ()) t (fun () -> f (read_result t))
 
 let notify_cancel t f =
   notify_result_cancel t
@@ -367,37 +367,57 @@ let memo ?size ?hash ?eq () =
         result in
     match result with Value v -> v | Fail e -> raise e
 
-let bind2_gen ?eq assign f t1 t2 =
-  let rt, ru = make_changeable ?eq () in
-  let read () =
-    match read_result t1, read_result t2 with
-      | Fail e, _
-      | _, Fail e -> write_exn ru e
-      | Value v1, Value v2 ->
-          try assign ru (f v1 v2)
-          with e -> write_exn ru e in
+let add_reader2 t1 t2 read =
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
   let dep _ = enqueue r in
   add_dep start t1 dep;
-  add_dep start t2 dep;
+  add_dep start t2 dep
+
+let bind2_gen ?eq assign f t1 t2 =
+  let rt, ru = make_changeable ?eq () in
+  add_reader2 t1 t2 begin fun () ->
+    match read_result t1, read_result t2 with
+      | Fail e, _
+      | _, Fail e -> write_exn ru e
+      | Value v1, Value v2 ->
+          try assign ru (f v1 v2)
+          with e -> write_exn ru e
+  end;
   rt
 
 let bind2 ?eq t1 t2 f = bind2_gen ?eq connect f t1 t2
 let lift2 ?eq f = bind2_gen ?eq write f
 let blift2 ?eq t1 t2 f = lift2 ?eq f t1 t2
 
+let add_reader3 t1 t2 t3 read =
+  let start = TS.tick () in
+  read ();
+  let r = { read = read; start = start; finish = TS.tick () } in
+  let dep _ = enqueue r in
+  add_dep start t1 dep;
+  add_dep start t2 dep;
+  add_dep start t3 dep
+
 let bind3_gen ?eq assign f t1 t2 t3 =
   let rt, ru = make_changeable ?eq () in
-  let read () =
+  add_reader3 t1 t2 t3 begin fun () ->
     match read_result t1, read_result t2, read_result t3 with
       | Fail e, _, _
       | _, Fail e, _
       | _, _, Fail e -> write_exn ru e
       | Value v1, Value v2, Value v3 ->
           try assign ru (f v1 v2 v3)
-          with e -> write_exn ru e in
+          with e -> write_exn ru e
+  end;
+  rt
+
+let bind3 ?eq t1 t2 t3 f = bind3_gen ?eq connect f t1 t2 t3
+let lift3 ?eq f = bind3_gen ?eq write f
+let blift3 ?eq t1 t2 t3 f = lift3 ?eq f t1 t2 t3
+
+let add_reader4 t1 t2 t3 t4 read =
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -405,15 +425,11 @@ let bind3_gen ?eq assign f t1 t2 t3 =
   add_dep start t1 dep;
   add_dep start t2 dep;
   add_dep start t3 dep;
-  rt
-
-let bind3 ?eq t1 t2 t3 f = bind3_gen ?eq connect f t1 t2 t3
-let lift3 ?eq f = bind3_gen ?eq write f
-let blift3 ?eq t1 t2 t3 f = lift3 ?eq f t1 t2 t3
+  add_dep start t4 dep
 
 let bind4_gen ?eq assign f t1 t2 t3 t4 =
   let rt, ru = make_changeable ?eq () in
-  let read () =
+  add_reader4 t1 t2 t3 t4 begin fun () ->
     match read_result t1, read_result t2, read_result t3, read_result t4 with
       | Fail e, _, _, _
       | _, Fail e, _, _
@@ -421,7 +437,15 @@ let bind4_gen ?eq assign f t1 t2 t3 t4 =
       | _, _, _, Fail e -> write_exn ru e
       | Value v1, Value v2, Value v3, Value v4 ->
           try assign ru (f v1 v2 v3 v4)
-          with e -> write_exn ru e in
+          with e -> write_exn ru e
+  end;
+  rt
+
+let bind4 ?eq t1 t2 t3 t4 f = bind4_gen ?eq connect f t1 t2 t3 t4
+let lift4 ?eq f = bind4_gen ?eq write f
+let blift4 ?eq t1 t2 t3 t4 f = lift4 ?eq f t1 t2 t3 t4
+
+let add_reader5 t1 t2 t3 t4 t5 read =
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -430,15 +454,11 @@ let bind4_gen ?eq assign f t1 t2 t3 t4 =
   add_dep start t2 dep;
   add_dep start t3 dep;
   add_dep start t4 dep;
-  rt
-
-let bind4 ?eq t1 t2 t3 t4 f = bind4_gen ?eq connect f t1 t2 t3 t4
-let lift4 ?eq f = bind4_gen ?eq write f
-let blift4 ?eq t1 t2 t3 t4 f = lift4 ?eq f t1 t2 t3 t4
+  add_dep start t5 dep
 
 let bind5_gen ?eq assign f t1 t2 t3 t4 t5 =
   let rt, ru = make_changeable ?eq () in
-  let read () =
+  add_reader5 t1 t2 t3 t4 t5 begin fun () ->
     match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5 with
       | Fail e, _, _, _, _
       | _, Fail e, _, _, _
@@ -447,7 +467,15 @@ let bind5_gen ?eq assign f t1 t2 t3 t4 t5 =
       | _, _, _, _, Fail e -> write_exn ru e
       | Value v1, Value v2, Value v3, Value v4, Value v5 ->
           try assign ru (f v1 v2 v3 v4 v5)
-          with e -> write_exn ru e in
+          with e -> write_exn ru e
+  end;
+  rt
+
+let bind5 ?eq t1 t2 t3 t4 t5 f = bind5_gen ?eq connect f t1 t2 t3 t4 t5
+let lift5 ?eq f = bind5_gen ?eq write f
+let blift5 ?eq t1 t2 t3 t4 t5 f = lift5 ?eq f t1 t2 t3 t4 t5
+
+let add_reader6 t1 t2 t3 t4 t5 t6 read =
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -457,15 +485,11 @@ let bind5_gen ?eq assign f t1 t2 t3 t4 t5 =
   add_dep start t3 dep;
   add_dep start t4 dep;
   add_dep start t5 dep;
-  rt
-
-let bind5 ?eq t1 t2 t3 t4 t5 f = bind5_gen ?eq connect f t1 t2 t3 t4 t5
-let lift5 ?eq f = bind5_gen ?eq write f
-let blift5 ?eq t1 t2 t3 t4 t5 f = lift5 ?eq f t1 t2 t3 t4 t5
+  add_dep start t6 dep
 
 let bind6_gen ?eq assign f t1 t2 t3 t4 t5 t6 =
   let rt, ru = make_changeable ?eq () in
-  let read () =
+  add_reader6 t1 t2 t3 t4 t5 t6 begin fun () ->
     match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6 with
       | Fail e, _, _, _, _, _
       | _, Fail e, _, _, _, _
@@ -475,7 +499,15 @@ let bind6_gen ?eq assign f t1 t2 t3 t4 t5 t6 =
       | _, _, _, _, _, Fail e -> write_exn ru e
       | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6 ->
           try assign ru (f v1 v2 v3 v4 v5 v6)
-          with e -> write_exn ru e in
+          with e -> write_exn ru e
+  end;
+  rt
+
+let bind6 ?eq t1 t2 t3 t4 t5 t6 f = bind6_gen ?eq connect f t1 t2 t3 t4 t5 t6
+let lift6 ?eq f = bind6_gen ?eq write f
+let blift6 ?eq t1 t2 t3 t4 t5 t6 f = lift6 ?eq f t1 t2 t3 t4 t5 t6
+
+let add_reader7 t1 t2 t3 t4 t5 t6 t7 read =
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -486,15 +518,11 @@ let bind6_gen ?eq assign f t1 t2 t3 t4 t5 t6 =
   add_dep start t4 dep;
   add_dep start t5 dep;
   add_dep start t6 dep;
-  rt
-
-let bind6 ?eq t1 t2 t3 t4 t5 t6 f = bind6_gen ?eq connect f t1 t2 t3 t4 t5 t6
-let lift6 ?eq f = bind6_gen ?eq write f
-let blift6 ?eq t1 t2 t3 t4 t5 t6 f = lift6 ?eq f t1 t2 t3 t4 t5 t6
+  add_dep start t7 dep
 
 let bind7_gen ?eq assign f t1 t2 t3 t4 t5 t6 t7 =
   let rt, ru = make_changeable ?eq () in
-  let read () =
+  add_reader7 t1 t2 t3 t4 t5 t6 t7 begin fun () ->
     match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6, read_result t7 with
       | Fail e, _, _, _, _, _, _
       | _, Fail e, _, _, _, _, _
@@ -505,36 +533,29 @@ let bind7_gen ?eq assign f t1 t2 t3 t4 t5 t6 t7 =
       | _, _, _, _, _, _, Fail e -> write_exn ru e
       | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6, Value v7 ->
           try assign ru (f v1 v2 v3 v4 v5 v6 v7)
-          with e -> write_exn ru e in
-  let start = TS.tick () in
-  read ();
-  let r = { read = read; start = start; finish = TS.tick () } in
-  let dep _ = enqueue r in
-  add_dep start t1 dep;
-  add_dep start t2 dep;
-  add_dep start t3 dep;
-  add_dep start t4 dep;
-  add_dep start t5 dep;
-  add_dep start t6 dep;
-  add_dep start t7 dep;
+          with e -> write_exn ru e
+  end;
   rt
 
 let bind7 ?eq t1 t2 t3 t4 t5 t6 t7 f = bind7_gen ?eq connect f t1 t2 t3 t4 t5 t6 t7
 let lift7 ?eq f = bind7_gen ?eq write f
 let blift7 ?eq t1 t2 t3 t4 t5 t6 t7 f = lift7 ?eq f t1 t2 t3 t4 t5 t6 t7
 
-let bindN_gen ?eq assign f ts =
-  let rt, ru = make_changeable ?eq () in
-  let read () =
-    try
-      let vs = List.map read ts in
-      assign ru (f vs)
-    with e -> write_exn ru e in
+let add_readerN ts read =
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
   let dep _ = enqueue r in
-  List.iter (fun t -> add_dep start t dep) ts;
+  List.iter (fun t -> add_dep start t dep) ts
+
+let bindN_gen ?eq assign f ts =
+  let rt, ru = make_changeable ?eq () in
+  add_readerN ts begin fun () ->
+    try
+      let vs = List.map read ts in
+      assign ru (f vs)
+    with e -> write_exn ru e
+  end;
   rt
 
 let bindN ?eq ts f = bindN_gen ?eq connect f ts

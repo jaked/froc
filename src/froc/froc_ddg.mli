@@ -31,6 +31,7 @@ val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t
 val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
 val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a t -> 'b t 
 val blift : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b) -> 'b t
+val add_reader : 'a t -> (unit -> unit) -> unit
 
 val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a t) -> 'a t
 val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
@@ -89,6 +90,9 @@ val blift2 :
   'a1 t -> 'a2 t ->
   ('a1 -> 'a2 -> 'b) ->
   'b t
+val add_reader2 :
+  'a1 t -> 'a2 t ->
+  (unit -> unit) -> unit
 
 val bind3 :
   ?eq:('b -> 'b -> bool) ->
@@ -105,6 +109,9 @@ val blift3 :
   'a1 t -> 'a2 t -> 'a3 t ->
   ('a1 -> 'a2 -> 'a3 -> 'b) ->
   'b t
+val add_reader3 :
+  'a1 t -> 'a2 t -> 'a3 t ->
+  (unit -> unit) -> unit
 
 val bind4 :
   ?eq:('b -> 'b -> bool) ->
@@ -121,6 +128,9 @@ val blift4 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b) ->
   'b t
+val add_reader4 :
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
+  (unit -> unit) -> unit
 
 val bind5 :
   ?eq:('b -> 'b -> bool) ->
@@ -137,6 +147,9 @@ val blift5 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b) ->
   'b t
+val add_reader5 :
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
+  (unit -> unit) -> unit
 
 val bind6 :
   ?eq:('b -> 'b -> bool) ->
@@ -153,6 +166,9 @@ val blift6 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b) ->
   'b t
+val add_reader6 :
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
+  (unit -> unit) -> unit
 
 val bind7 :
   ?eq:('b -> 'b -> bool) ->
@@ -169,7 +185,11 @@ val blift7 :
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b) ->
   'b t
+val add_reader7 :
+  'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
+  (unit -> unit) -> unit
 
 val bindN : ?eq:('b -> 'b -> bool) -> 'a t list -> ('a list -> 'b t) -> 'b t
 val liftN : ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'a t list -> 'b t
 val bliftN : ?eq:('b -> 'b -> bool) -> 'a t list -> ('a list -> 'b) -> 'b t
+val add_readerN : 'a t list -> (unit -> unit) -> unit
