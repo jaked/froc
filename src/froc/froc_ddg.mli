@@ -23,6 +23,11 @@
 type +'a t
 type -'a u
 
+type cancel = unit -> unit
+val make_cancel : (unit -> unit) -> cancel
+val no_cancel : cancel
+val cancel : cancel -> unit
+
 val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t * 'a u
 val return : 'a -> 'a t
 val fail : exn -> 'a t
@@ -32,6 +37,7 @@ val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
 val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a t -> 'b t 
 val blift : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b) -> 'b t
 val add_reader : 'a t -> (unit -> unit) -> unit
+val add_reader_cancel : 'a t -> (unit -> unit) -> cancel
 
 val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a t) -> 'a t
 val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
@@ -47,18 +53,12 @@ val write_exn : 'a u -> exn -> unit
 val write_result : 'a u -> 'a result -> unit
 
 val notify : 'a t -> ('a -> unit) -> unit
-val notify_result : 'a t -> ('a result -> unit) -> unit
-val connect : 'a u -> 'a t -> unit
-val cleanup : (unit -> unit) -> unit
-
-type cancel = unit -> unit
-val make_cancel : (unit -> unit) -> cancel
-val no_cancel : cancel
-val cancel : cancel -> unit
-
 val notify_cancel : 'a t -> ('a -> unit) -> cancel
+val notify_result : 'a t -> ('a result -> unit) -> unit
 val notify_result_cancel : 'a t -> ('a result -> unit) -> cancel
+val connect : 'a u -> 'a t -> unit
 val connect_cancel : 'a u -> 'a t -> cancel
+val cleanup : (unit -> unit) -> unit
 
 val make_changeable : ?eq:('a -> 'a -> bool) -> ?result:'a result -> unit -> 'a t * 'a u
 val make_constant : 'a result -> 'a t

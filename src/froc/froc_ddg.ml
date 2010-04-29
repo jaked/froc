@@ -121,34 +121,28 @@ let make_cancel f = f
 let no_cancel = ignore
 let cancel c = c ()
 
-let add_dep_cancel t f =
-  match repr_of_t t with
-    | Constant _ -> ignore
-    | Changeable c ->
-        let dl = Dlist.add_after c.deps f in
-        make_cancel (fun () -> Dlist.remove dl)
+let add_dep_cancel ts t dep =
+  let cancel =
+    match repr_of_t t with
+      | Constant _ -> no_cancel
+      | Changeable c ->
+          let dl = Dlist.add_after c.deps dep in
+          make_cancel (fun () -> Dlist.remove dl) in
+  TS.add_cleanup ts cancel;
+  cancel
 
-let add_dep ts t dep =
-  let cancel = add_dep_cancel t dep in
-  TS.add_cleanup ts cancel
+let add_dep ts t dep = let _ = add_dep_cancel ts t dep in ()
 
 let notify_result_cancel t f =
-  add_dep_cancel t f
+  add_dep_cancel (TS.tick ()) t f
 
-let notify_result t f =
-  add_dep (TS.tick ()) t (fun () -> f (read_result t))
+let notify_result t f = let _ = notify_result_cancel t f in ()
 
 let notify_cancel t f =
-  notify_result_cancel t
-    (function
-       | Fail _ -> ()
-       | Value v -> f v)
+  notify_result_cancel t (function Fail _ -> () | Value v -> f v)
 
 let notify t f =
-  notify_result t
-    (function
-       | Fail _ -> ()
-       | Value v -> f v)
+  notify_result t (function Fail _ -> () | Value v -> f v)
 
 let cleanup f =
   TS.add_cleanup (TS.tick ()) f
@@ -260,16 +254,18 @@ let init () =
 
 let enqueue e = PQ.add !pq e
 
-let add_reader t read =
+let add_reader_cancel t read =
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
   let dep _ = enqueue r in
-  add_dep start t dep
+  add_dep_cancel start t dep
+
+let add_reader t read = let _ = add_reader_cancel t read in ()
 
 let connect_cancel u t' =
   write_result u (read_result t');
-  add_dep_cancel t' (write_result_no_eq u)
+  add_dep_cancel (TS.tick ()) t' (write_result_no_eq u)
 
 let connect u t' =
   write_result u (read_result t');
