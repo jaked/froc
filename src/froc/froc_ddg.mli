@@ -23,14 +23,20 @@
 type +'a t
 type -'a u
 
+exception Unset
+
 type cancel = unit -> unit
 val make_cancel : (unit -> unit) -> cancel
 val no_cancel : cancel
 val cancel : cancel -> unit
 
+type 'a result = Value of 'a | Fail of exn
+
 val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t * 'a u
 val return : 'a -> 'a t
 val fail : exn -> 'a t
+
+val is_constant : 'a t -> bool
 
 val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t
 val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
@@ -44,18 +50,17 @@ val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn 
 val catch_lift : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a) -> 'a t
 val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b) -> (exn -> 'b) -> 'b t
 
-type 'a result = Value of 'a | Fail of exn
-
 val read : 'a t -> 'a
 val read_result : 'a t -> 'a result
 val write : 'a u -> 'a -> unit
 val write_exn : 'a u -> exn -> unit
 val write_result : 'a u -> 'a result -> unit
+val clear : 'a u -> unit
 
-val notify : 'a t -> ('a -> unit) -> unit
-val notify_cancel : 'a t -> ('a -> unit) -> cancel
-val notify_result : 'a t -> ('a result -> unit) -> unit
-val notify_result_cancel : 'a t -> ('a result -> unit) -> cancel
+val notify : ?current:bool -> 'a t -> ('a -> unit) -> unit
+val notify_cancel : ?current:bool -> 'a t -> ('a -> unit) -> cancel
+val notify_result : ?current:bool -> 'a t -> ('a result -> unit) -> unit
+val notify_result_cancel : ?current:bool -> 'a t -> ('a result -> unit) -> cancel
 val connect : 'a u -> 'a t -> unit
 val connect_cancel : 'a u -> 'a t -> cancel
 val cleanup : (unit -> unit) -> unit

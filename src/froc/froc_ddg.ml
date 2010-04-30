@@ -67,9 +67,11 @@ let next_id =
   let next_id = ref 1 in
   fun () -> let id = !next_id in incr next_id; id
 
+let unset = Fail Unset
+
 let make_changeable
     ?(eq = total_eq)
-    ?(result = Fail Unset)
+    ?(result = unset)
     () =
   let c = {
     id = next_id ();
@@ -85,6 +87,13 @@ let changeable ?eq v = make_changeable ?eq ~result:(Value v) ()
 let return v = make_constant (Value v)
 let fail e = make_constant (Fail e)
 
+let is_constant t =
+  match repr_of_t t with Constant _ -> true | _ -> false
+
+let clear u =
+  let c = changeable_of_u u in
+  c.state <- unset
+
 let write_result u r =
   let c = changeable_of_u u in
   let eq =
@@ -95,13 +104,13 @@ let write_result u r =
   if not eq
   then begin
     c.state <- r;
-    Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
+    Dlist.iter (fun f -> f r) c.deps
   end
 
 let write_result_no_eq u r =
   let c = changeable_of_u u in
   c.state <- r;
-  Dlist.iter (fun f -> try f r with e -> !handle_exn e) c.deps
+  Dlist.iter (fun f -> f r) c.deps
 
 let write u v = write_result u (Value v)
 let write_exn u e = write_result u (Fail e)
@@ -132,20 +141,6 @@ let add_dep_cancel ts t dep =
   cancel
 
 let add_dep ts t dep = let _ = add_dep_cancel ts t dep in ()
-
-let notify_result_cancel t f =
-  add_dep_cancel (TS.tick ()) t f
-
-let notify_result t f = let _ = notify_result_cancel t f in ()
-
-let notify_cancel t f =
-  notify_result_cancel t (function Fail _ -> () | Value v -> f v)
-
-let notify t f =
-  notify_result t (function Fail _ -> () | Value v -> f v)
-
-let cleanup f =
-  TS.add_cleanup (TS.tick ()) f
 
 type reader = {
   read : unit -> unit;
@@ -270,6 +265,31 @@ let connect_cancel u t' =
 let connect u t' =
   write_result u (read_result t');
   add_dep (TS.tick ()) t' (write_result_no_eq u)
+
+let notify_result_cancel ?(current=true) t f =
+  if current
+  then
+    add_reader_cancel t begin fun () ->
+      try f (read_result t) with e -> !handle_exn e
+    end
+  else
+    let notify = ref false in
+    add_reader_cancel t begin fun () ->
+      if not !notify then notify := true
+      else
+        try f (read_result t) with e -> !handle_exn e
+    end
+
+let notify_result ?current t f = let _ = notify_result_cancel ?current t f in ()
+
+let notify_cancel ?current t f =
+  notify_result_cancel ?current t (function Fail _ -> () | Value v -> f v)
+
+let notify ?current t f =
+  notify_result ?current t (function Fail _ -> () | Value v -> f v)
+
+let cleanup f =
+  TS.add_cleanup (TS.tick ()) f
 
 external identity : 'a -> 'a = "%identity"
 

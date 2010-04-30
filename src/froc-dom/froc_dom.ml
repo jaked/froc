@@ -32,7 +32,6 @@ let ticks_b msb =
     match r with
       | Value p -> id := Some (Dom.window#setInterval (fun () -> send s ()) p)
       | Fail _ -> () (* ? *) in
-  set_interval (read_result msb);
   cleanup clear;
   notify_result_b msb set_interval;
   e
@@ -53,7 +52,7 @@ let send_delayed_event e de =
   let rec send de =
     if not (de.l_next == de)
     then begin
-      send_result e de.l_val;
+      send_result_deferred e de.l_val;
       let de_next = de.l_next in de.l_next <- de;
       send de_next;
     end in
@@ -63,15 +62,16 @@ let delay_eb t msb =
   let e, s = make_event () in
   let rec de = { l_val = Fail Exit; l_next = de } in
   let de_next = ref de in
-  notify_result_e t (fun r ->
-    match read_result msb with
-      | (Fail _) as r ->
-          de_next := { l_val = r; l_next = !de_next};
-          send_delayed_event s !de_next
-      | Value ms ->
-          let de = { l_val = r; l_next = !de_next } in
-          de_next := de;
-          ignore (Dom.window#setTimeout (fun () -> send_delayed_event s de) ms));
+  let t_msb = sample (fun e msb -> e, msb) t msb in
+  notify_result_e t_msb begin function
+    | Fail _ as r ->
+        de_next := { l_val = r; l_next = !de_next};
+        send_delayed_event s !de_next
+    | Value (v, ms) ->
+        let de = { l_val = Value v; l_next = !de_next } in
+        de_next := de;
+        ignore (Dom.window#setTimeout (fun () -> send_delayed_event s de) ms)
+  end;
   e
 
 let delay_e t ms = delay_eb t (return ms)

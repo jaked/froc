@@ -18,147 +18,16 @@
  * MA 02111-1307, USA
  *)
 
-module Dlist = Froc_dlist
-module TS = Froc_timestamp
-
 include Froc_ddg
 
-type 'a occurs = {
-  e_id : int;
-  mutable e_deps : ('a result -> unit) Dlist.t;
-}
+let debug = ref ignore
 
-type 'a repr = Never | Occurs of 'a occurs
+let set_debug f =
+  debug := f;
+  set_debug f
 
-type +'a event
-type -'a event_sender
-
-external event_of_repr : 'a repr -> 'a event = "%identity"
-external repr_of_event : 'a event -> 'a repr = "%identity"
-external event_sender_of_occurs : 'a occurs -> 'a event_sender = "%identity"
-external occurs_of_event_sender : 'a event_sender -> 'a occurs = "%identity"
-
-let next_id =
-  let next_id = ref 1 in
-  fun () -> let id = !next_id in incr next_id; id
-
-let make_event () =
-  let o = {
-    e_id = next_id ();
-    e_deps = Dlist.empty ();
-  } in
-  event_of_repr (Occurs o), event_sender_of_occurs o
-
-let never = event_of_repr Never
-
-let handle_exn = ref raise
-
-let set_exn_handler h =
-  set_exn_handler h;
-  handle_exn := h
-
-let send_result s r =
-  let o = occurs_of_event_sender s in
-  Dlist.iter (fun f -> try f r with e -> !handle_exn e) o.e_deps
-
-let send s v = send_result s (Value v)
-let send_exn s e = send_result s (Fail e)
-
-let notify_result_e_cancel t f =
-  match repr_of_event t with
-    | Never -> no_cancel
-    | Occurs o ->
-        let dl = Dlist.add_after o.e_deps f in
-        make_cancel (fun () -> Dlist.remove dl)
-
-let notify_result_e t f =
-  let cancel = notify_result_e_cancel t f in
-  TS.add_cleanup (TS.tick ()) cancel
-
-let notify_e_cancel t f =
-  notify_result_e_cancel t
-    (function
-       | Value v -> f v
-       | Fail _ -> ())
-
-let notify_e t f =
-  notify_result_e t
-    (function
-       | Value v -> f v
-       | Fail _ -> ())
-
-let hash_event t =
-  match repr_of_event t with
-    | Never -> 0
-    | Occurs o -> o.e_id
-
-let next t =
-  let t', s' = make_event () in
-  let c = ref no_cancel in
-  c :=
-    notify_result_e_cancel t
-      (fun r ->
-         cancel !c;
-         c := no_cancel;
-         send_result s' r;
-         (* XXX future deps are still added; would be better to become Never *)
-         Dlist.clear (occurs_of_event_sender s').e_deps);
-  t'
-
-let merge ts =
-  let t, s = make_event () in
-  List.iter (fun t' -> notify_result_e t' (send_result s)) ts;
-  t
-
-let map f t =
-  let t', s' = make_event () in
-  notify_result_e t
-    (fun r ->
-      let r =
-        match r with
-          | Fail e -> Fail e
-          | Value v ->
-              try Value (f v)
-              with e -> Fail e in
-      send_result s' r);
-  t'
-
-let filter p t =
-  let t', s' = make_event () in
-  notify_result_e t
-    (fun r ->
-      let r =
-        match r with
-          | Fail _ -> Some r
-          | Value v ->
-              try if p v then Some (Value v) else None
-              with e -> Some (Fail e) in (* ? *)
-      match r with Some r -> send_result s' r | _ -> ());
-  t'
-
-let collect f init t =
-  let t', s' = make_event () in
-  let st = ref (Value init) in
-  notify_result_e t
-    (fun r ->
-      let r =
-        match !st, r with
-          | Fail _, _ -> None (* ? *)
-          | _, Fail e -> Some (Fail e)
-          | Value sv, Value v ->
-              try Some (Value (f sv v))
-              with e -> Some (Fail e) in
-      match r with Some r -> st := r; send_result s' r | _ -> ());
-  t'
-
-let join_e ee =
-  let t, s = make_event () in
-  let c = ref no_cancel in
-  notify_result_e ee
-    (function
-       | Value e -> cancel !c; c := notify_result_e_cancel e (send_result s)
-       | Fail e -> cancel !c; c := no_cancel; send_exn s e);
-  t
+type 'a event = 'a t
+type 'a event_sender = 'a u
 
 let q = Queue.create ()
 
@@ -169,22 +38,144 @@ let init () =
 let running = ref false
 
 let run_queue () =
-  running := true;
-  while not (Queue.is_empty q) do
-    let f = Queue.take q in
-    f ();
-    propagate ()
-  done;
-  running := false
+  if not !running then begin
+    running := true;
+    try
+      while not (Queue.is_empty q)
+      do Queue.take q () done;
+      running := false
+    with e ->
+      running := false;
+      raise e
+  end
 
-let enqueue f =
-  Queue.add f q;
-  if not !running
-  then run_queue ()
+let temps = ref []
 
-let send_result t r = enqueue (fun () -> send_result t r)
-let send t v = send_result t (Value v)
-let send_exn t e = send_result t (Fail e)
+let write_temp_result u r =
+  temps := (fun () -> clear u) :: !temps;
+  write_result u r
+
+let send_result s r =
+  match !temps with
+    | [] ->
+        write_temp_result s r;
+        propagate ();
+        List.iter (fun f -> f ()) !temps;
+        temps := [];
+        run_queue ()
+    | _ -> failwith "already in update loop"
+
+let send s v = send_result s (Value v)
+let send_exn s e = send_result s (Fail e)
+
+let send_result_deferred u r =
+  Queue.add (fun () -> send_result u r) q;
+  run_queue ()
+
+let send_deferred u v = send_result_deferred u (Value v)
+let send_exn_deferred u e = send_result_deferred u (Fail e)
+
+let never_eq _ _ = false
+
+let make_event () = make_changeable ~eq:never_eq ()
+
+let never = make_constant (Fail Unset)
+let is_never = is_constant
+
+let notify_result_e_cancel t f = notify_result_cancel ~current:false t f
+let notify_result_e t f = notify_result ~current:false t f
+let notify_e_cancel t f = notify_cancel ~current:false t f
+let notify_e t f = notify ~current:false t f
+
+let hash_event = hash
+
+let next t =
+  if is_never t then never
+  else
+    let rt, ru = make_event () in
+    let c = ref no_cancel in
+    c :=
+      notify_result_e_cancel t begin fun r ->
+        cancel !c;
+        c := no_cancel;
+        write_temp_result ru r;
+        (* XXX clear deps, don't allow new deps to be added *)
+      end;
+    rt
+
+let merge ts =
+  if List.for_all is_never ts then never
+  else
+    let rt, ru = make_event () in
+    let notify = ref false in
+    add_readerN ts begin fun () ->
+      if not !notify then notify := true
+      else
+        let rec loop = function
+          | [] -> assert false
+          | h :: t ->
+              match read_result h with
+                | Fail Unset -> loop t
+                | r -> r in
+        write_temp_result ru (loop ts)
+    end;
+    rt
+
+let map f t =
+  if is_never t then never
+  else
+    let rt, ru = make_event () in
+    notify_result_e t begin fun r ->
+      let r =
+        match r with
+          | Fail e -> Fail e
+          | Value v -> try Value (f v) with e -> Fail e in
+      write_temp_result ru r
+    end;
+    rt
+
+let filter p t =
+  if is_never t then never
+  else
+    let rt, ru = make_event () in
+    notify_result_e t begin fun r ->
+      let r =
+        match r with
+          | Fail _ -> Some r
+          | Value v ->
+              try if p v then Some (Value v) else None
+              with e -> Some (Fail e) in (* ? *)
+      match r with Some r -> write_temp_result ru r | _ -> ()
+    end;
+    rt
+
+let collect f init t =
+  if is_never t then never
+  else
+    let rt, ru = make_event () in
+    let st = ref (Value init) in
+    notify_result_e t begin fun r ->
+      let r =
+        match !st, r with
+          | Fail _, _ -> None (* ? *)
+          | _, Fail e -> Some (Fail e)
+          | Value sv, Value v ->
+              try Some (Value (f sv v))
+              with e -> Some (Fail e) in
+      match r with Some r -> st := r; write_temp_result ru r | _ -> ()
+    end;
+    rt
+
+let join_e ee =
+  if is_never ee then never
+  else
+    let rt, ru = make_event () in
+    let c = ref no_cancel in
+    notify_result_e ee begin function
+      | Value e -> cancel !c; c := notify_result_e_cancel e (write_temp_result ru)
+      | Fail e -> cancel !c; c := no_cancel; write_temp_result ru (Fail e)
+    end;
+    rt
 
 type 'a behavior = 'a t
 
@@ -198,27 +189,51 @@ let hash_behavior = hash
 let join_b ?eq bb = bind ?eq bb (fun b -> b)
 
 let switch ?eq b e =
-  let bt, bu = make_changeable ?eq () in
-  let c = ref (connect_cancel bu b) in
-  notify_result_e e
-    (function
-       | Value b -> cancel !c; c := connect_cancel bu b
-       | Fail e -> cancel !c; c := no_cancel; write_exn bu e);
-  bt
+  if is_never e then b else
+    let bt, bu = make_changeable ?eq () in
+    let c = ref (connect_cancel bu b) in
+    notify_result_e e begin function
+      | Value b -> cancel !c; c := connect_cancel bu b
+      | Fail e -> cancel !c; c := no_cancel; write_exn bu e
+    end;
+    bt
 
 let until ?eq b e = switch ?eq b (next e)
 
-let hold_result ?eq init t =
-  let bt, bu = make_changeable ?eq ~result:init () in
-  notify_result_e t (write_result bu);
-  bt
+let hold_result ?eq init e =
+  if is_never e then make_constant init else
+    let t, u = make_changeable ?eq ~result:init () in
+    notify_result_e e (write_result u);
+    t
 
 let hold ?eq init e = hold_result ?eq (Value init) e
 
 let changes b =
-  let t, s = make_event () in
-  notify_result_b b (send_result s);
-  t
+  if is_constant b then never else
+    let t, u = make_event () in
+    notify_result_b ~current:false b (write_temp_result u);
+    t
+
+let sample f e b =
+  if is_never e then never else
+    if is_constant b then
+      match read_result b with
+        | Fail ex -> map (fun _ -> raise ex) e
+        | Value bv -> map (fun ev -> f ev bv) e
+    else
+      let t, u = make_event () in
+      let notify = ref false in
+      add_reader2 e b begin fun () ->
+        if not !notify then notify := true
+        else
+          match read_result e, read_result b with
+            | Fail Unset, _ -> ()
+            | Fail e, _
+            | _, Fail e -> write_temp_result u (Fail e)
+            | Value ve, Value vb ->
+                try write_temp_result u (Value (f ve vb)) with e -> write_temp_result u (Fail e)
+      end;
+      t
 
 let when_true b =
   map (fun b -> ()) (filter (fun b -> b) (changes b))
@@ -226,5 +241,5 @@ let when_true b =
 let count t = hold 0 (collect (fun n _ -> n + 1) 0 t)
 
 let make_cell v =
-  let e, s = make_event () in
-  (hold v e, send s)
+  let t, u = make_event () in
+  (hold v t, send_deferred u)

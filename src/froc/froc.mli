@@ -148,30 +148,34 @@ val read_result : 'a behavior -> 'a result
      an exception.
   *)
 
-val notify_b : 'a behavior -> ('a -> unit) -> unit
+val notify_b : ?current:bool -> 'a behavior -> ('a -> unit) -> unit
   (**
      Adds a listener for the value of a behavior, which is called
      whenever the value changes. When the behavior fails the listener
      is not called. The notification is implicitly cancelled when the
      calling context is re-run.
+
+     The listener is called immediately with the current value of the
+     behavior, unless [current] is false.
   *)
 
-val notify_b_cancel : 'a behavior -> ('a -> unit) -> cancel
+val notify_b_cancel : ?current:bool -> 'a behavior -> ('a -> unit) -> cancel
   (**
-     Same as [notify_b], but not implicitly cancelled; an explicit
-     cancel handle is returned.
+
+     Same as [notify_b], and returns a cancel handle (the notification
+     is still implicitly cancelled).
   *)
 
-val notify_result_b : 'a behavior -> ('a result -> unit) -> unit
+val notify_result_b : ?current:bool -> 'a behavior -> ('a result -> unit) -> unit
   (**
      Same as [notify_b] but the listener is called with a result when
      the value changes or when the behavior fails.
   *)
 
-val notify_result_b_cancel : 'a behavior -> ('a result -> unit) -> cancel
+val notify_result_b_cancel : ?current:bool -> 'a behavior -> ('a result -> unit) -> cancel
   (**
-     Same as [notify_b_cancel] but the listener is called with a
-     result when the value changes or when the behavior fails.
+     Same as [notify_b_cancel], and returns a cancel handle (the notification
+     is still implicitly cancelled).
   *)
 
 val cleanup : (unit -> unit) -> unit
@@ -236,8 +240,8 @@ val notify_e : 'a event -> ('a -> unit) -> unit
 
 val notify_e_cancel : 'a event -> ('a -> unit) -> cancel
   (**
-     Same as [notify_e], but not implicitly cancelled; an explicit
-     cancel handle is returned.
+     Same as [notify_e], and returns a cancel handle (the notification
+     is still implicitly cancelled).
   *)
 
 val notify_result_e : 'a event -> ('a result -> unit) -> unit
@@ -248,8 +252,8 @@ val notify_result_e : 'a event -> ('a result -> unit) -> unit
 
 val notify_result_e_cancel : 'a event -> ('a result -> unit) -> cancel
   (**
-     Same as [notify_e_cancel] but the listener is called with a result when
-     a value or a failure is sent.
+     Same as [notify_e_cancel], and returns a cancel handle (the notification
+     is still implicitly cancelled).
   *)
 
 val send : 'a event_sender -> 'a -> unit
@@ -260,6 +264,15 @@ val send_exn : 'a event_sender -> exn -> unit
 
 val send_result : 'a event_sender -> 'a result -> unit
   (** [send_result e r] calls the listeners of the associated event with [r]. *)
+
+val send_deferred : 'a event_sender -> 'a -> unit
+  (** [send e v] calls the listeners of the associated event with [Value v] in the next update cycle. *) 
+
+val send_exn_deferred : 'a event_sender -> exn -> unit
+  (** [send_exn e x] calls the listeners of the associated event with [Fail x] in the next update cycle. *) 
+
+val send_result_deferred : 'a event_sender -> 'a result -> unit
+  (** [send_result e r] calls the listeners of the associated event with [r] in the next update cycle. *)
 
 val next : 'a event -> 'a event
   (** [next e] fires just the next occurence of [e]. *)
@@ -287,7 +300,7 @@ val join_e : 'a event event -> 'a event
 val hash_event : 'a event -> int
   (** A hash function for events. *)
 
-(** {2 Derived operations} *)
+(** {2 Combinations of behaviors and events} *)
 
 val switch : ?eq:('a -> 'a -> bool) -> 'a behavior -> 'a behavior event -> 'a behavior
   (** [switch b e] behaves as [b] until [e] fires, then behaves as the last value of [e]. *)
@@ -311,6 +324,11 @@ val hold_result : ?eq:('a -> 'a -> bool) -> 'a result -> 'a event -> 'a behavior
 val changes : 'a behavior -> 'a event
   (** [changes b] fires the value of [b] whenever it changes. *)
 
+val sample : ('a -> 'b -> 'c) -> 'a event -> 'b behavior -> 'c event
+  (**
+     [sample f e b] fires [f ev bv] (where [ev] and [bv] are the values of
+     [e] and [b]) when [e] fires.
+  *)
 
 val when_true : bool behavior -> unit event
   (** [when_true b] fires whenever [b] becomes true. *)
