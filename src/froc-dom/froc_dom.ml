@@ -76,10 +76,10 @@ let delay_eb t msb =
 
 let delay_e t ms = delay_eb t (return ms)
 
-let delay_bb t msb =
-  t |> changes |> (fun e -> delay_eb e msb) |> hold_result (read_result t)
+let delay_bb init t msb =
+  t |> changes |> (fun e -> delay_eb e msb) |> hold init
 
-let delay_b t ms = delay_bb t (return ms)
+let delay_b init t ms = delay_bb init t (return ms)
 
 let mouse_e () =
   let e, s = make_event () in
@@ -129,7 +129,6 @@ let appendChild n nb =
         | None -> n#appendChild c
         | Some oc -> n#replaceChild c oc);
     old := Some c in
-  update (read_result nb);
   notify_result_b nb update
 
 let replaceNode n nb =
@@ -140,7 +139,6 @@ let replaceNode n nb =
     let c = node_of_result r in
     ignore (p#replaceChild c !old);
     old := c in
-  update (read_result nb);
   notify_result_b nb update
 
 let clicks (elem : #Dom.element) =

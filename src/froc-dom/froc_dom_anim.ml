@@ -57,6 +57,4 @@ let attach
   let notify = function
     | Froc.Value instrs -> draw canvas instrs
     | Froc.Fail _ -> () (* XXX ? *) in
-  (* maybe notify_b should notify when you first call it? *)
-  notify (Froc.read_result instrsb);
   Froc.notify_result_b instrsb notify

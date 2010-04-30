@@ -131,23 +131,6 @@ val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a behavior) -> ('a -> 'b
 val join_b : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
   (** [join_b b] behaves as whichever behavior is currently the value of [b]. *)
 
-val read : 'a behavior -> 'a
-  (**
-
-     [read b] returns the current value of [b]; if [b] fails with
-     exception [e] it raises [e].
-
-     Since [read] doesn't go through the dependency tracking
-     machinery, it can get a stale value if called at the wrong
-     time. You probably want [bind] instead.
-  *)
-
-val read_result : 'a behavior -> 'a result
-  (**
-     Same as [read] but returns a result instead of possibly raising
-     an exception.
-  *)
-
 val notify_b : ?current:bool -> 'a behavior -> ('a -> unit) -> unit
   (**
      Adds a listener for the value of a behavior, which is called
@@ -313,12 +296,6 @@ val hold : ?eq:('a -> 'a -> bool) -> 'a -> 'a event -> 'a behavior
      [hold v e] behaves as the last value fired by [e], or [v] if [e]
      has not yet fired a value (since [hold] was called). [eq]
      gives the equality on the resulting behavior.
-  *)
-
-val hold_result : ?eq:('a -> 'a -> bool) -> 'a result -> 'a event -> 'a behavior
-  (**
-     [hold_result] is the same as [hold] but initialized with a result
-     instead of a value.
   *)
 
 val changes : 'a behavior -> 'a event

@@ -200,13 +200,11 @@ let switch ?eq b e =
 
 let until ?eq b e = switch ?eq b (next e)
 
-let hold_result ?eq init e =
-  if is_never e then make_constant init else
-    let t, u = make_changeable ?eq ~result:init () in
+let hold ?eq init e =
+  if is_never e then return init else
+    let t, u = changeable ?eq init in
     notify_result_e e (write_result u);
     t
-
-let hold ?eq init e = hold_result ?eq (Value init) e
 
 let changes b =
   if is_constant b then never else
