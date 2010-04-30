@@ -271,41 +271,58 @@ let connect u t' =
   write_result u (read_result t');
   add_dep (TS.tick ()) t' (write_result_no_eq u)
 
-let bind_gen ?eq assign f t =
-  let rt, ru = make_changeable ?eq () in
-  add_reader t (fun () ->
-    match read_result t with
-      | Fail e -> write_exn ru e
-      | Value v -> try assign ru (f v) with e -> write_exn ru e);
-  rt
+external identity : 'a -> 'a = "%identity"
 
-let bind ?eq t f = bind_gen ?eq connect f t
+let bind_gen ?eq return assign f t =
+  match repr_of_t t with
+    | Constant (_, Fail e) -> fail e
+    | Constant (_, Value v) -> (try return (f v) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader t begin fun () ->
+          match read_result t with
+            | Fail e -> write_exn ru e
+            | Value v -> try assign ru (f v) with e -> write_exn ru e
+        end;
+        rt
+
+let bind ?eq t f = bind_gen ?eq identity connect f t
 let (>>=) t f = bind t f
-let lift ?eq f = bind_gen ?eq write f
+let lift ?eq f = bind_gen ?eq return write f
 let blift ?eq t f = lift ?eq f t
 
-let try_bind_gen ?eq assign f succ err =
+let try_bind_gen ?eq return assign f succ err =
   let t = try f () with e -> fail e in
-  let rt, ru = make_changeable ?eq () in
-  add_reader t (fun () ->
-    try assign ru (match read_result t with Value v -> succ v | Fail e -> err e)
-    with e -> write_exn ru e);
-  rt
+  match repr_of_t t with
+    | Constant (_, Fail e) -> (try return (err e) with e -> fail e)
+    | Constant (_, Value v) -> (try return (succ v) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader t begin fun () ->
+          try assign ru (match read_result t with Value v -> succ v | Fail e -> err e)
+          with e -> write_exn ru e
+        end;
+        rt
 
-let try_bind ?eq f succ err = try_bind_gen ?eq connect f succ err
-let try_bind_lift ?eq f succ err = try_bind_gen ?eq write f succ err
+let try_bind ?eq f succ err = try_bind_gen ?eq identity connect f succ err
+let try_bind_lift ?eq f succ err = try_bind_gen ?eq return write f succ err
 
-let catch_gen ?eq assign f err =
+let catch_gen ?eq return assign f err =
   let t = try f () with e -> fail e in
-  let rt, ru = make_changeable ?eq () in
-  add_reader t (fun () ->
-    match read_result t with
-      | Value _ as r -> write_result ru r
-      | Fail e -> try assign ru (err e) with e -> write_exn ru e);
-  rt
+  match repr_of_t t with
+    | Constant (_, Fail e) -> (try return (err e) with e -> fail e)
+    | Constant (_, Value _) -> t
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader t begin fun () ->
+          match read_result t with
+            | Value _ as r -> write_result ru r
+            | Fail e -> try assign ru (err e) with e -> write_exn ru e
+        end;
+        rt
 
-let catch ?eq f err = catch_gen ?eq connect f err
-let catch_lift ?eq f err = catch_gen write ?eq f err
+let catch ?eq f err = catch_gen ?eq identity connect f err
+let catch_lift ?eq f err = catch_gen return write ?eq f err
 
 let finish = Stack.create ()
 
@@ -371,20 +388,23 @@ let add_reader2 t1 t2 read =
   add_dep start t1 dep;
   add_dep start t2 dep
 
-let bind2_gen ?eq assign f t1 t2 =
-  let rt, ru = make_changeable ?eq () in
-  add_reader2 t1 t2 begin fun () ->
-    match read_result t1, read_result t2 with
-      | Fail e, _
-      | _, Fail e -> write_exn ru e
-      | Value v1, Value v2 ->
-          try assign ru (f v1 v2)
-          with e -> write_exn ru e
-  end;
-  rt
+let bind2_gen ?eq return assign f t1 t2 =
+  match repr_of_t t1, repr_of_t t2 with
+    | Constant (_, Fail e), _
+    | _, Constant (_, Fail e) -> fail e
+    | Constant (_, Value v1), Constant (_, Value v2) -> (try return (f v1 v2) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader2 t1 t2 begin fun () ->
+          match read_result t1, read_result t2 with
+            | Fail e, _
+            | _, Fail e -> write_exn ru e
+            | Value v1, Value v2 -> try assign ru (f v1 v2) with e -> write_exn ru e
+        end;
+        rt
 
-let bind2 ?eq t1 t2 f = bind2_gen ?eq connect f t1 t2
-let lift2 ?eq f = bind2_gen ?eq write f
+let bind2 ?eq t1 t2 f = bind2_gen ?eq identity connect f t1 t2
+let lift2 ?eq f = bind2_gen ?eq return write f
 let blift2 ?eq t1 t2 f = lift2 ?eq f t1 t2
 
 let add_reader3 t1 t2 t3 read =
@@ -396,21 +416,25 @@ let add_reader3 t1 t2 t3 read =
   add_dep start t2 dep;
   add_dep start t3 dep
 
-let bind3_gen ?eq assign f t1 t2 t3 =
-  let rt, ru = make_changeable ?eq () in
-  add_reader3 t1 t2 t3 begin fun () ->
-    match read_result t1, read_result t2, read_result t3 with
-      | Fail e, _, _
-      | _, Fail e, _
-      | _, _, Fail e -> write_exn ru e
-      | Value v1, Value v2, Value v3 ->
-          try assign ru (f v1 v2 v3)
-          with e -> write_exn ru e
-  end;
-  rt
+let bind3_gen ?eq return assign f t1 t2 t3 =
+  match repr_of_t t1, repr_of_t t2, repr_of_t t3 with
+    | Constant (_, Fail e), _, _
+    | _, Constant (_, Fail e), _
+    | _, _, Constant (_, Fail e) -> fail e
+    | Constant (_, Value v1), Constant (_, Value v2), Constant (_, Value v3) -> (try return (f v1 v2 v3) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader3 t1 t2 t3 begin fun () ->
+          match read_result t1, read_result t2, read_result t3 with
+            | Fail e, _, _
+            | _, Fail e, _
+            | _, _, Fail e -> write_exn ru e
+            | Value v1, Value v2, Value v3 -> try assign ru (f v1 v2 v3) with e -> write_exn ru e
+        end;
+        rt
 
-let bind3 ?eq t1 t2 t3 f = bind3_gen ?eq connect f t1 t2 t3
-let lift3 ?eq f = bind3_gen ?eq write f
+let bind3 ?eq t1 t2 t3 f = bind3_gen ?eq identity connect f t1 t2 t3
+let lift3 ?eq f = bind3_gen ?eq return write f
 let blift3 ?eq t1 t2 t3 f = lift3 ?eq f t1 t2 t3
 
 let add_reader4 t1 t2 t3 t4 read =
@@ -423,22 +447,30 @@ let add_reader4 t1 t2 t3 t4 read =
   add_dep start t3 dep;
   add_dep start t4 dep
 
-let bind4_gen ?eq assign f t1 t2 t3 t4 =
-  let rt, ru = make_changeable ?eq () in
-  add_reader4 t1 t2 t3 t4 begin fun () ->
-    match read_result t1, read_result t2, read_result t3, read_result t4 with
-      | Fail e, _, _, _
-      | _, Fail e, _, _
-      | _, _, Fail e, _
-      | _, _, _, Fail e -> write_exn ru e
-      | Value v1, Value v2, Value v3, Value v4 ->
-          try assign ru (f v1 v2 v3 v4)
-          with e -> write_exn ru e
-  end;
-  rt
+let bind4_gen ?eq return assign f t1 t2 t3 t4 =
+  match repr_of_t t1, repr_of_t t2, repr_of_t t3, repr_of_t t4 with
+    | Constant (_, Fail e), _, _, _
+    | _, Constant (_, Fail e), _, _
+    | _, _, Constant (_, Fail e), _
+    | _, _, _, Constant (_, Fail e) -> fail e
+    | Constant (_, Value v1), Constant (_, Value v2), Constant (_, Value v3), Constant (_, Value v4) ->
+        (try return (f v1 v2 v3 v4) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader4 t1 t2 t3 t4 begin fun () ->
+          match read_result t1, read_result t2, read_result t3, read_result t4 with
+            | Fail e, _, _, _
+            | _, Fail e, _, _
+            | _, _, Fail e, _
+            | _, _, _, Fail e -> write_exn ru e
+            | Value v1, Value v2, Value v3, Value v4 ->
+                try assign ru (f v1 v2 v3 v4)
+                with e -> write_exn ru e
+        end;
+        rt
 
-let bind4 ?eq t1 t2 t3 t4 f = bind4_gen ?eq connect f t1 t2 t3 t4
-let lift4 ?eq f = bind4_gen ?eq write f
+let bind4 ?eq t1 t2 t3 t4 f = bind4_gen ?eq identity connect f t1 t2 t3 t4
+let lift4 ?eq f = bind4_gen ?eq return write f
 let blift4 ?eq t1 t2 t3 t4 f = lift4 ?eq f t1 t2 t3 t4
 
 let add_reader5 t1 t2 t3 t4 t5 read =
@@ -452,23 +484,32 @@ let add_reader5 t1 t2 t3 t4 t5 read =
   add_dep start t4 dep;
   add_dep start t5 dep
 
-let bind5_gen ?eq assign f t1 t2 t3 t4 t5 =
-  let rt, ru = make_changeable ?eq () in
-  add_reader5 t1 t2 t3 t4 t5 begin fun () ->
-    match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5 with
-      | Fail e, _, _, _, _
-      | _, Fail e, _, _, _
-      | _, _, Fail e, _, _
-      | _, _, _, Fail e, _
-      | _, _, _, _, Fail e -> write_exn ru e
-      | Value v1, Value v2, Value v3, Value v4, Value v5 ->
-          try assign ru (f v1 v2 v3 v4 v5)
-          with e -> write_exn ru e
-  end;
-  rt
+let bind5_gen ?eq return assign f t1 t2 t3 t4 t5 =
+  match repr_of_t t1, repr_of_t t2, repr_of_t t3, repr_of_t t4, repr_of_t t5 with
+    | Constant (_, Fail e), _, _, _, _
+    | _, Constant (_, Fail e), _, _, _
+    | _, _, Constant (_, Fail e), _, _
+    | _, _, _, Constant (_, Fail e), _
+    | _, _, _, _, Constant (_, Fail e) -> fail e
+    | Constant (_, Value v1), Constant (_, Value v2), Constant (_, Value v3), Constant (_, Value v4), Constant (_, Value v5) ->
+        (try return (f v1 v2 v3 v4 v5) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader5 t1 t2 t3 t4 t5 begin fun () ->
+          match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5 with
+            | Fail e, _, _, _, _
+            | _, Fail e, _, _, _
+            | _, _, Fail e, _, _
+            | _, _, _, Fail e, _
+            | _, _, _, _, Fail e -> write_exn ru e
+            | Value v1, Value v2, Value v3, Value v4, Value v5 ->
+                try assign ru (f v1 v2 v3 v4 v5)
+                with e -> write_exn ru e
+        end;
+        rt
 
-let bind5 ?eq t1 t2 t3 t4 t5 f = bind5_gen ?eq connect f t1 t2 t3 t4 t5
-let lift5 ?eq f = bind5_gen ?eq write f
+let bind5 ?eq t1 t2 t3 t4 t5 f = bind5_gen ?eq identity connect f t1 t2 t3 t4 t5
+let lift5 ?eq f = bind5_gen ?eq return write f
 let blift5 ?eq t1 t2 t3 t4 t5 f = lift5 ?eq f t1 t2 t3 t4 t5
 
 let add_reader6 t1 t2 t3 t4 t5 t6 read =
@@ -483,24 +524,35 @@ let add_reader6 t1 t2 t3 t4 t5 t6 read =
   add_dep start t5 dep;
   add_dep start t6 dep
 
-let bind6_gen ?eq assign f t1 t2 t3 t4 t5 t6 =
-  let rt, ru = make_changeable ?eq () in
-  add_reader6 t1 t2 t3 t4 t5 t6 begin fun () ->
-    match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6 with
-      | Fail e, _, _, _, _, _
-      | _, Fail e, _, _, _, _
-      | _, _, Fail e, _, _, _
-      | _, _, _, Fail e, _, _
-      | _, _, _, _, Fail e, _
-      | _, _, _, _, _, Fail e -> write_exn ru e
-      | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6 ->
-          try assign ru (f v1 v2 v3 v4 v5 v6)
-          with e -> write_exn ru e
-  end;
-  rt
+let bind6_gen ?eq return assign f t1 t2 t3 t4 t5 t6 =
+  match repr_of_t t1, repr_of_t t2, repr_of_t t3, repr_of_t t4, repr_of_t t5, repr_of_t t6 with
+    | Constant (_, Fail e), _, _, _, _, _
+    | _, Constant (_, Fail e), _, _, _, _
+    | _, _, Constant (_, Fail e), _, _, _
+    | _, _, _, Constant (_, Fail e), _, _
+    | _, _, _, _, Constant (_, Fail e), _
+    | _, _, _, _, _, Constant (_, Fail e) -> fail e
+    | Constant (_, Value v1), Constant (_, Value v2), Constant (_, Value v3), Constant (_, Value v4), Constant (_, Value v5),
+        Constant (_, Value v6) ->
+        (try return (f v1 v2 v3 v4 v5 v6) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader6 t1 t2 t3 t4 t5 t6 begin fun () ->
+          match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6 with
+            | Fail e, _, _, _, _, _
+            | _, Fail e, _, _, _, _
+            | _, _, Fail e, _, _, _
+            | _, _, _, Fail e, _, _
+            | _, _, _, _, Fail e, _
+            | _, _, _, _, _, Fail e -> write_exn ru e
+            | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6 ->
+                try assign ru (f v1 v2 v3 v4 v5 v6)
+                with e -> write_exn ru e
+        end;
+        rt
 
-let bind6 ?eq t1 t2 t3 t4 t5 t6 f = bind6_gen ?eq connect f t1 t2 t3 t4 t5 t6
-let lift6 ?eq f = bind6_gen ?eq write f
+let bind6 ?eq t1 t2 t3 t4 t5 t6 f = bind6_gen ?eq identity connect f t1 t2 t3 t4 t5 t6
+let lift6 ?eq f = bind6_gen ?eq return write f
 let blift6 ?eq t1 t2 t3 t4 t5 t6 f = lift6 ?eq f t1 t2 t3 t4 t5 t6
 
 let add_reader7 t1 t2 t3 t4 t5 t6 t7 read =
@@ -516,25 +568,37 @@ let add_reader7 t1 t2 t3 t4 t5 t6 t7 read =
   add_dep start t6 dep;
   add_dep start t7 dep
 
-let bind7_gen ?eq assign f t1 t2 t3 t4 t5 t6 t7 =
-  let rt, ru = make_changeable ?eq () in
-  add_reader7 t1 t2 t3 t4 t5 t6 t7 begin fun () ->
-    match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6, read_result t7 with
-      | Fail e, _, _, _, _, _, _
-      | _, Fail e, _, _, _, _, _
-      | _, _, Fail e, _, _, _, _
-      | _, _, _, Fail e, _, _, _
-      | _, _, _, _, Fail e, _, _
-      | _, _, _, _, _, Fail e, _
-      | _, _, _, _, _, _, Fail e -> write_exn ru e
-      | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6, Value v7 ->
-          try assign ru (f v1 v2 v3 v4 v5 v6 v7)
-          with e -> write_exn ru e
-  end;
-  rt
+let bind7_gen ?eq return assign f t1 t2 t3 t4 t5 t6 t7 =
+  match repr_of_t t1, repr_of_t t2, repr_of_t t3, repr_of_t t4, repr_of_t t5, repr_of_t t6, repr_of_t t7 with
+    | Constant (_, Fail e), _, _, _, _, _, _
+    | _, Constant (_, Fail e), _, _, _, _, _
+    | _, _, Constant (_, Fail e), _, _, _, _
+    | _, _, _, Constant (_, Fail e), _, _, _
+    | _, _, _, _, Constant (_, Fail e), _, _
+    | _, _, _, _, _, Constant (_, Fail e), _
+    | _, _, _, _, _, _, Constant (_, Fail e) -> fail e
+    | Constant (_, Value v1), Constant (_, Value v2), Constant (_, Value v3), Constant (_, Value v4), Constant (_, Value v5),
+        Constant (_, Value v6), Constant (_, Value v7) ->
+        (try return (f v1 v2 v3 v4 v5 v6 v7) with e -> fail e)
+    | _ ->
+        let rt, ru = make_changeable ?eq () in
+        add_reader7 t1 t2 t3 t4 t5 t6 t7 begin fun () ->
+          match read_result t1, read_result t2, read_result t3, read_result t4, read_result t5, read_result t6, read_result t7 with
+            | Fail e, _, _, _, _, _, _
+            | _, Fail e, _, _, _, _, _
+            | _, _, Fail e, _, _, _, _
+            | _, _, _, Fail e, _, _, _
+            | _, _, _, _, Fail e, _, _
+            | _, _, _, _, _, Fail e, _
+            | _, _, _, _, _, _, Fail e -> write_exn ru e
+            | Value v1, Value v2, Value v3, Value v4, Value v5, Value v6, Value v7 ->
+                try assign ru (f v1 v2 v3 v4 v5 v6 v7)
+                with e -> write_exn ru e
+        end;
+        rt
 
-let bind7 ?eq t1 t2 t3 t4 t5 t6 t7 f = bind7_gen ?eq connect f t1 t2 t3 t4 t5 t6 t7
-let lift7 ?eq f = bind7_gen ?eq write f
+let bind7 ?eq t1 t2 t3 t4 t5 t6 t7 f = bind7_gen ?eq identity connect f t1 t2 t3 t4 t5 t6 t7
+let lift7 ?eq f = bind7_gen ?eq return write f
 let blift7 ?eq t1 t2 t3 t4 t5 t6 t7 f = lift7 ?eq f t1 t2 t3 t4 t5 t6 t7
 
 let add_readerN ts read =
@@ -544,16 +608,24 @@ let add_readerN ts read =
   let dep _ = enqueue r in
   List.iter (fun t -> add_dep start t dep) ts
 
-let bindN_gen ?eq assign f ts =
-  let rt, ru = make_changeable ?eq () in
-  add_readerN ts begin fun () ->
-    try
-      let vs = List.map read ts in
-      assign ru (f vs)
-    with e -> write_exn ru e
-  end;
-  rt
+let bindN_gen ?eq return assign f ts =
+  let rec loop vs = function
+    | [] -> (try return (f (List.rev vs)) with e -> fail e)
+    | h :: t ->
+        match repr_of_t h with
+          | Constant (_, Fail e) -> fail e
+          | Constant (_, Value v) -> loop (v :: vs) t
+          | _ ->
+              let rt, ru = make_changeable ?eq () in
+              add_readerN ts begin fun () ->
+                try
+                  let vs = List.map read ts in
+                  assign ru (f vs)
+                with e -> write_exn ru e
+              end;
+              rt in
+  loop [] ts
 
-let bindN ?eq ts f = bindN_gen ?eq connect f ts
-let liftN ?eq f = bindN_gen ?eq write f
+let bindN ?eq ts f = bindN_gen ?eq identity connect f ts
+let liftN ?eq f = bindN_gen ?eq return write f
 let bliftN ?eq ts f = liftN ?eq f ts
