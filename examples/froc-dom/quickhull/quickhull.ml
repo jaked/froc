@@ -3,6 +3,8 @@ module F = Froc
 module Fd = Froc_dom
 module Fda = Froc_dom_anim
 
+let (|>) x f = f x
+
 (* DEFINE DEBUG *)
 
 IFDEF DEBUG
@@ -187,15 +189,13 @@ let onload () =
     let coord () =
       let v = Random.float 5. in
       let init = Random.float max in
-      F.hold init
-        (F.map fst
-           (F.collect
-              (fun (p, v) () ->
-                 let p = p +. v in
-                 let v = if p <= min || p >= max then -.v else v in
-               p, v)
-              (init, v)
-              ticks)) in
+      let collect (p, v) () =
+        let p = p +. v in
+        let v = if p <= min || p >= max then -.v else v in
+        p, v in
+      F.collect collect (init, v) ticks |>
+          F.map fst |>
+              F.hold init in
     let x = coord () and y = coord () in
     let c = random_color () in
     F.blift2 x y (fun x y -> x, y, c) in
@@ -211,36 +211,37 @@ let onload () =
     ] in
 
   let points : (float * float * Fda.color) L.t =
-    F.join_b
-      (F.hold (L.nil ())
-         (F.map List.hd
-            (F.collect
-               (function
-                  | [] -> (fun _ -> assert false)
-                  | h :: t as hist ->
-                      function
-                        | `Stationary -> L.cons (stationary ()) h :: hist
-                        | `Bouncing -> (bouncing () >>= fun p -> L.cons p h) :: hist
-                        | `Remove -> match t with [] -> hist | _ -> t)
-               [ L.nil() ]
-               clicks))) in
+    let memo = F.memo () in
+    let lookup = memo (function 0 -> L.nil () | _ -> assert false) in
+    let stationary = memo (fun v -> L.cons (stationary ()) (lookup (v - 1))) in
+    let bouncing = memo (fun v -> bouncing () >>= fun p -> L.cons p (lookup (v - 1))) in
+    let collect (v, _) = function
+      | `Stationary -> let v = v + 1 in (v, stationary v)
+      | `Bouncing -> let v = v + 1 in (v, bouncing v)
+      | `Remove -> match v with 0 -> (0, lookup 0) | v -> let v = v - 1 in (v, lookup v) in
+    F.collect collect (0, L.nil ()) clicks |>
+        F.map snd |>
+            F.hold (L.nil ()) |>
+                F.join_b in
 
   let disks : Fda.shape list F.behavior =
-    F.blift
-      (L.to_list points)
-      (List.map (fun (x, y, c) -> Fda.disk (x, y) 5. c)) in
+    points |>
+        L.to_list |>
+            F.lift (List.map (fun (x, y, c) -> Fda.disk (x, y) 5. c)) in
 
   let hull : Fda.shape F.behavior =
-    F.blift
-      (L.to_list (QH.hull (L.map (fun (x, y, c) -> x, y) points)))
-      (fun hull -> Fda.filled_poly hull (Fda.color 128 0 0)) in
+    points |>
+        L.map (fun (x, y, c) -> x, y) |>
+            QH.hull |>
+                L.to_list |>
+                    F.lift (fun hull -> Fda.filled_poly hull (Fda.color 128 0 0)) in
 
-  let shapes = F.bind2 disks hull begin fun disks hull ->
+  let shapes = F.blift2 disks hull begin fun disks hull ->
     IFDEF STATS THEN
       incr S.ticks;
       console#log (Printf.sprintf "ticks=%d, maps=%d, filters=%d, maxs=%d" !S.ticks !S.maps !S.filters !S.maxs)
     ENDIF;
-    F.return (hull :: disks)
+    hull :: disks
   end in
 
   Froc_dom_anim.attach (get "canvas") shapes
