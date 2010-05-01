@@ -179,6 +179,9 @@ let join_e ee =
 
 type 'a behavior = 'a t
 
+let sample = read
+let sample_result = read_result
+
 let notify_b = notify
 let notify_b_cancel = notify_cancel
 let notify_result_b = notify_result
@@ -211,27 +214,6 @@ let changes b =
     let t, u = make_event () in
     notify_result_b ~current:false b (write_temp_result u);
     t
-
-let sample f e b =
-  if is_never e then never else
-    if is_constant b then
-      match read_result b with
-        | Fail ex -> map (fun _ -> raise ex) e
-        | Value bv -> map (fun ev -> f ev bv) e
-    else
-      let t, u = make_event () in
-      let notify = ref false in
-      add_reader2 e b begin fun () ->
-        if not !notify then notify := true
-        else
-          match read_result e, read_result b with
-            | Fail Unset, _ -> ()
-            | Fail e, _
-            | _, Fail e -> write_temp_result u (Fail e)
-            | Value ve, Value vb ->
-                try write_temp_result u (Value (f ve vb)) with e -> write_temp_result u (Fail e)
-      end;
-      t
 
 let when_true b =
   map (fun b -> ()) (filter (fun b -> b) (changes b))

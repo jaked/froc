@@ -102,6 +102,17 @@ val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a behavior -> 'b behavior
      binding it to a behavior.
   *)
 
+val sample : 'b behavior -> 'b
+  (**
+     [sample b] returns the current value of [b], or raises [b]'s
+     exception if it is failed.
+  *)
+
+val sample_result : 'b behavior -> 'b result
+  (**
+     Same as [sample] but returns a result.
+  *)
+
 val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a behavior) -> (exn -> 'a behavior) -> 'a behavior
   (**
      [catch b f] behaves the same as [b()] if [b()] succeeds. If [b()]
@@ -300,12 +311,6 @@ val hold : ?eq:('a -> 'a -> bool) -> 'a -> 'a event -> 'a behavior
 
 val changes : 'a behavior -> 'a event
   (** [changes b] fires the value of [b] whenever it changes. *)
-
-val sample : ('a -> 'b -> 'c) -> 'a event -> 'b behavior -> 'c event
-  (**
-     [sample f e b] fires [f ev bv] (where [ev] and [bv] are the values of
-     [e] and [b]) when [e] fires.
-  *)
 
 val when_true : bool behavior -> unit event
   (** [when_true b] fires whenever [b] becomes true. *)

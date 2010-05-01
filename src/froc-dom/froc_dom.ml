@@ -62,15 +62,15 @@ let delay_eb t msb =
   let e, s = make_event () in
   let rec de = { l_val = Fail Exit; l_next = de } in
   let de_next = ref de in
-  let t_msb = sample (fun e msb -> e, msb) t msb in
-  notify_result_e t_msb begin function
-    | Fail _ as r ->
-        de_next := { l_val = r; l_next = !de_next};
-        send_delayed_event s !de_next
-    | Value (v, ms) ->
-        let de = { l_val = Value v; l_next = !de_next } in
-        de_next := de;
-        ignore (Dom.window#setTimeout (fun () -> send_delayed_event s de) ms)
+  notify_result_e t begin fun r ->
+    match sample_result msb with
+      | Fail _ as r ->
+          de_next := { l_val = r; l_next = !de_next};
+          send_delayed_event s !de_next
+      | Value ms ->
+          let de = { l_val = r; l_next = !de_next } in
+          de_next := de;
+          ignore (Dom.window#setTimeout (fun () -> send_delayed_event s de) ms)
   end;
   e
 
