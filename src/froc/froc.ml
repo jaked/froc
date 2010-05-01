@@ -170,10 +170,9 @@ let join_e ee =
   if is_never ee then never
   else
     let rt, ru = make_event () in
-    let c = ref no_cancel in
     notify_result_e ee begin function
-      | Value e -> cancel !c; c := notify_result_e_cancel e (write_temp_result ru)
-      | Fail e -> cancel !c; c := no_cancel; write_temp_result ru (Fail e)
+      | Value e -> notify_result_e e (write_temp_result ru)
+      | Fail e -> write_temp_result ru (Fail e)
     end;
     rt
 
@@ -194,10 +193,10 @@ let join_b ?eq bb = bind ?eq bb (fun b -> b)
 let switch ?eq b e =
   if is_never e then b else
     let bt, bu = make_changeable ?eq () in
-    let c = ref (connect_cancel bu b) in
-    notify_result_e e begin function
-      | Value b -> cancel !c; c := connect_cancel bu b
-      | Fail e -> cancel !c; c := no_cancel; write_exn bu e
+    notify_result e begin function
+      | Fail Unset -> connect bu b
+      | Value b -> connect bu b
+      | Fail e -> write_exn bu e
     end;
     bt
 
