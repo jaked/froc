@@ -76,10 +76,10 @@ let delay_eb t msb =
 
 let delay_e t ms = delay_eb t (return ms)
 
-let delay_bb init t msb =
-  t |> changes |> (fun e -> delay_eb e msb) |> hold init
+let delay_bb t msb =
+  t |> changes |> (fun e -> delay_eb e msb) |> hold_result (sample_result t)
 
-let delay_b init t ms = delay_bb init t (return ms)
+let delay_b t ms = delay_bb t (return ms)
 
 let mouse_e () =
   let e, s = make_event () in

@@ -309,6 +309,11 @@ val hold : ?eq:('a -> 'a -> bool) -> 'a -> 'a event -> 'a behavior
      gives the equality on the resulting behavior.
   *)
 
+val hold_result : ?eq:('a -> 'a -> bool) -> 'a result -> 'a event -> 'a behavior
+  (**
+     Same as [hold] but initialized with a result.
+  *)
+
 val changes : 'a behavior -> 'a event
   (** [changes b] fires the value of [b] whenever it changes. *)
 
