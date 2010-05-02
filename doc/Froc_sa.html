@@ -1,0 +1,174 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Froc_dom_anim.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Froc" rel="Chapter" href="Froc.html">
+<link title="Froc_ddg" rel="Chapter" href="Froc_ddg.html">
+<link title="Froc_dom" rel="Chapter" href="Froc_dom.html">
+<link title="Froc_dom_anim" rel="Chapter" href="Froc_dom_anim.html">
+<link title="Froc_sa" rel="Chapter" href="Froc_sa.html"><link title="Overview" rel="Section" href="#2_Overview">
+<link title="Changeables" rel="Section" href="#2_Changeables">
+<link title="Variations" rel="Section" href="#2_Variations">
+<link title="Debugging" rel="Section" href="#2_Debugging">
+<title>Froc_sa</title>
+</head>
+<body>
+<div class="navbar"><a href="Froc_dom_anim.html">Previous</a>
+&nbsp;<a href="index.html">Up</a>
+&nbsp;</div>
+<center><h1>Module <a href="type_Froc_sa.html">Froc_sa</a></h1></center>
+<br>
+<pre><span class="keyword">module</span> Froc_sa: <code class="code">sig</code> <a href="Froc_sa.html">..</a> <code class="code">end</code></pre>Self-adjusting computation<br>
+<hr width="100%">
+<br>
+<a name="2_Overview"></a>
+<h2>Overview</h2>
+<p>
+
+   <code class="code">Froc_sa</code> implements <em>self-adjusting computation</em> following
+   Acar et al. Changeable values are presented as a monad, using ideas
+   from <code class="code">Lwt</code>.
+<p>
+
+   A <em>changeable</em> is a monadic value that can change over
+   time. Binding a changeable causes the binder to be made a
+   dependency of the changeable, and to be re-executed when the
+   changeable changes. A <em>writeable</em> associated with a changeable is
+   used to change a changeable.
+<p>
+
+   Self-adjusting computation proceeds in phases: after an initial
+   computation, call <code class="code">write</code> to change some inputs, then <code class="code">propagate</code>
+   to make the result consistent again.<br>
+<pre><span class="keyword">val</span> <a name="VALinit"></a>init : <code class="type">unit -> unit</code></pre><div class="info">
+Initialize the library. Must be called before any other function.<br>
+</div>
+<br>
+<a name="2_Changeables"></a>
+<h2>Changeables</h2><br>
+<pre><span class="keyword">type</span> <a name="TYPEt"></a><code class="type">+'a</code> t </pre>
+<div class="info">
+Type of changeables of type <code class="code">'a</code>.<br>
+</div>
+
+<pre><span class="keyword">type</span> <a name="TYPEu"></a><code class="type">-'a</code> u </pre>
+<div class="info">
+Type of writeables of type <code class="code">'a</code>.<br>
+</div>
+
+<pre><span class="keyword">val</span> <a name="VALchangeable"></a>changeable : <code class="type">?eq:('a -> 'a -> bool) -> 'a -> 'a <a href="Froc_sa.html#TYPEt">t</a> * 'a <a href="Froc_sa.html#TYPEu">u</a></code></pre><div class="info">
+<code class="code">changeable v</code> is a changeable with initial value <code class="code">v</code>.
+<p>
+
+     The optional <code class="code">eq</code> argument gives an equality function; a
+     changeable is considered changed (and its dependencies notified)
+     only if its new value is not <code class="code">eq</code> to its old one. The default
+     equality holds iff the values <code class="code">compare</code> to <code class="code">0</code> (incomparable
+     values are always not equal).<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALreturn"></a>return : <code class="type">'a -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">return v</code> is a constant changeable with value <code class="code">v</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALfail"></a>fail : <code class="type">exn -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">fail e</code> is a constant changeable that fails with the exception <code class="code">e</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALbind"></a>bind : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">bind c f</code> behaves as <code class="code">f</code> applied to the value of <code class="code">c</code>. If <code class="code">c</code>
+     fails, <code class="code">bind c f</code> also fails, with the same exception.
+<p>
+
+     When the value of a changeable changes, all functions <code class="code">f</code> bound to
+     it are re-executed.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VAL(>>=)"></a>(&gt;&gt;=) : <code class="type">'a <a href="Froc_sa.html#TYPEt">t</a> -> ('a -> 'b <a href="Froc_sa.html#TYPEt">t</a>) -> 'b <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">c &gt;&gt;= f</code> is an alternative notation for <code class="code">bind c f</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALblift"></a>blift : <code class="type">?eq:('a -> 'a -> bool) -> 'b <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">blift c ?eq f</code> is equivalent to <code class="code">bind c (fun v -&gt; return ?eq (f
+     v))</code>, but is slightly more efficient.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALlift"></a>lift : <code class="type">?eq:('a -> 'a -> bool) -> ('b -> 'a) -> 'b <a href="Froc_sa.html#TYPEt">t</a> -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">lift ?eq f c</code> is equivalent to <code class="code">blift c ?eq f</code>; it can be
+     partially applied to lift a function to the monad without yet
+     binding it to a changeable.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALcatch"></a>catch : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> (exn -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">catch c f</code> behaves the same as <code class="code">c()</code> if <code class="code">c()</code> succeeds. If <code class="code">c()</code>
+     fails with some exception <code class="code">e</code>, <code class="code">catch c f</code> behaves as <code class="code">f e</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALcatch_lift"></a>catch_lift : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> (exn -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">catch_lift c ?eq f</code> is equivalent to <code class="code">catch c (fun e -&gt; return
+     ?eq (f e))</code>, but is slightly more efficient.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALtry_bind"></a>try_bind : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'b <a href="Froc_sa.html#TYPEt">t</a>) -><br>       ('b -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> (exn -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">try_bind c f g</code> behaves as <code class="code">bind (c()) f</code> if <code class="code">c()</code> succeeds. If
+     <code class="code">c()</code> fails with exception <code class="code">e</code>, <code class="code">try_bind c f g</code> behaves as <code class="code">g
+     e</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALtry_bind_lift"></a>try_bind_lift : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'b <a href="Froc_sa.html#TYPEt">t</a>) -> ('b -> 'a) -> (exn -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
+<code class="code">try_bind_lift c ?eq f g</code> is equivalent to <code class="code">try_bind c (fun v -&gt;
+     return ?eq (f v)) (fun e -&gt; return ?eq (g e))</code>, but is slightly
+     more efficient.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALread"></a>read : <code class="type">'a <a href="Froc_sa.html#TYPEt">t</a> -> 'a</code></pre><div class="info">
+<code class="code">read c</code> returns the value of <code class="code">c</code>, or raises an exception if <code class="code">c</code> fails.
+<p>
+
+     You shouldn't call <code class="code">read</code> in the context of a binder, since you
+     might get a stale result.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALwrite"></a>write : <code class="type">'a <a href="Froc_sa.html#TYPEu">u</a> -> 'a -> unit</code></pre><div class="info">
+<code class="code">write w v</code> updates the value of the associated changeable
+     <code class="code">c</code>. Changeables that depend on <code class="code">c</code> will not be consistent until
+     you call <code class="code">propagate</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALwrite_exn"></a>write_exn : <code class="type">'a <a href="Froc_sa.html#TYPEu">u</a> -> exn -> unit</code></pre><div class="info">
+<code class="code">write_exn w e</code> updates the associated changeable <code class="code">c</code> to fail
+     with exception <code class="code">e</code>. Changeables that depend on <code class="code">c</code> will not be
+     consistent until you call <code class="code">propagate</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALpropagate"></a>propagate : <code class="type">unit -> unit</code></pre><div class="info">
+Process any outstanding changes so all changeables are consistent.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALmemo"></a>memo : <code class="type">?size:int -><br>       ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit -> ('a -> 'b) -> 'a -> 'b</code></pre><div class="info">
+<code class="code">memo f</code> creates a <em>memo function</em> from <code class="code">f</code>. Calls to the memo
+     function are memoized and may be reused when the calling context
+     is re-executed.
+<p>
+
+     <code class="code">memo</code> does not provide general-purpose memoization; calls may be
+     reused only within the calling context in which they originally
+     occurred, and only in the original order they occurred.
+<p>
+
+     To memoize a recursive function, use the following idiom: <pre><code class="code">       let m = memo () in
+       let rec f x = ... memo f y in
+       let f x = memo f x
+     </code></pre>
+<p>
+
+     The default hash function is not appropriate for changeables
+     (since they contain mutable data) so you should use <code class="code">hash</code>
+     instead.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALhash"></a>hash : <code class="type">'a <a href="Froc_sa.html#TYPEt">t</a> -> int</code></pre><div class="info">
+A hash function for changeables,<br>
+</div>
+<br>
+<a name="2_Variations"></a>
+<h2>Variations</h2><br>
+<pre><span class="keyword">val</span> <a name="VALbindN"></a>bindN : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> list -> ('b list -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALliftN"></a>liftN : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b list -> 'a) -> 'b <a href="Froc_sa.html#TYPEt">t</a> list -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALliftN"></a>liftN : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b list -> 'a) -> 'b <a href="Froc_sa.html#TYPEt">t</a> list -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind2"></a>bind2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -> 'c <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift2"></a>blift2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -> 'c <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift2"></a>lift2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'a) -> 'b <a href="Froc_sa.html#TYPEt">t</a> -> 'c <a href="Froc_sa.html#TYPEt">t</a> -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind3"></a>bind3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'd -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift3"></a>blift3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -> 'd <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'd -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift3"></a>lift3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'a) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -> 'c <a href="Froc_sa.html#TYPEt">t</a> -> 'd <a href="Froc_sa.html#TYPEt">t</a> -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind4"></a>bind4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'd -> 'e -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift4"></a>blift4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -> 'e <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'd -> 'e -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift4"></a>lift4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'a) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -> 'c <a href="Froc_sa.html#TYPEt">t</a> -> 'd <a href="Froc_sa.html#TYPEt">t</a> -> 'e <a href="Froc_sa.html#TYPEt">t</a> -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind5"></a>bind5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -><br>       'f <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'd -> 'e -> 'f -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift5"></a>blift5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -><br>       'f <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'd -> 'e -> 'f -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift5"></a>lift5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'a) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -> 'd <a href="Froc_sa.html#TYPEt">t</a> -> 'e <a href="Froc_sa.html#TYPEt">t</a> -> 'f <a href="Froc_sa.html#TYPEt">t</a> -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind6"></a>bind6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -><br>       'f <a href="Froc_sa.html#TYPEt">t</a> -><br>       'g <a href="Froc_sa.html#TYPEt">t</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift6"></a>blift6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -><br>       'f <a href="Froc_sa.html#TYPEt">t</a> -><br>       'g <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift6"></a>lift6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -> 'e <a href="Froc_sa.html#TYPEt">t</a> -> 'f <a href="Froc_sa.html#TYPEt">t</a> -> 'g <a href="Froc_sa.html#TYPEt">t</a> -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind7"></a>bind7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -><br>       'f <a href="Froc_sa.html#TYPEt">t</a> -><br>       'g <a href="Froc_sa.html#TYPEt">t</a> -><br>       'h <a href="Froc_sa.html#TYPEt">t</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift7"></a>blift7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -><br>       'f <a href="Froc_sa.html#TYPEt">t</a> -><br>       'g <a href="Froc_sa.html#TYPEt">t</a> -><br>       'h <a href="Froc_sa.html#TYPEt">t</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift7"></a>lift7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -><br>       'c <a href="Froc_sa.html#TYPEt">t</a> -><br>       'd <a href="Froc_sa.html#TYPEt">t</a> -><br>       'e <a href="Froc_sa.html#TYPEt">t</a> -> 'f <a href="Froc_sa.html#TYPEt">t</a> -> 'g <a href="Froc_sa.html#TYPEt">t</a> -> 'h <a href="Froc_sa.html#TYPEt">t</a> -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><br>
+<a name="2_Debugging"></a>
+<h2>Debugging</h2><br>
+<pre><span class="keyword">val</span> <a name="VALset_debug"></a>set_debug : <code class="type">(string -> unit) -> unit</code></pre><div class="info">
+Set a function for showing library debugging.<br>
+</div>
+</body></html>

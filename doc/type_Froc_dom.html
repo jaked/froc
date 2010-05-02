@@ -1,0 +1,35 @@
+<html><head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Froc" rel="Chapter" href="Froc.html">
+<link title="Froc_ddg" rel="Chapter" href="Froc_ddg.html">
+<link title="Froc_dom" rel="Chapter" href="Froc_dom.html">
+<link title="Froc_dom_anim" rel="Chapter" href="Froc_dom_anim.html">
+<link title="Froc_sa" rel="Chapter" href="Froc_sa.html"><title>Froc_dom</title>
+</head>
+<body>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ticks&nbsp;:&nbsp;float&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Froc</span>.event<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ticks_b&nbsp;:&nbsp;float&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Froc</span>.event<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;delay_e&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.event&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.event<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;delay_eb&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.event&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.event<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;delay_b&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.behavior<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;delay_bb&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Froc</span>.behavior<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;mouse_e&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;*&nbsp;int)&nbsp;<span class="constructor">Froc</span>.event<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;mouse_b&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;*&nbsp;int)&nbsp;<span class="constructor">Froc</span>.behavior<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;attach_innerHTML&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.element&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;input_value_e&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.input&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Froc</span>.event<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;input_value_b&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.input&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Froc</span>.behavior<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;attach_input_value_e&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.input&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Froc</span>.event&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;attach_input_value_b&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.input&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;attach_backgroundColor_e&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.element&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Froc</span>.event&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;attach_backgroundColor_b&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.element&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;appendChild&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.node&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.node&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;replaceNode&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.node&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.node&nbsp;<span class="constructor">Froc</span>.behavior&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;clicks&nbsp;:&nbsp;<span class="keywordsign">#</span><span class="constructor">Dom</span>.element&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Froc</span>.event<br>
+<span class="keyword">end</span></code></body></html>
