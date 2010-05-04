@@ -30,12 +30,14 @@ type 'a event = 'a t
 type 'a event_sender = 'a u
 
 let q = Queue.create ()
+let temps = ref []
+let running = ref false
 
 let init () =
   init ();
-  Queue.clear q
-
-let running = ref false
+  Queue.clear q;
+  temps := [];
+  running := false
 
 let run_queue () =
   if not !running then begin
@@ -49,7 +51,13 @@ let run_queue () =
       raise e
   end
 
-let temps = ref []
+let with_run_queue f =
+  (* don't run the queue until f is done *)
+  let running' = !running in
+  running := true;
+  f ();
+  running := running';
+  run_queue ()
 
 let write_temp_result u r =
   temps := (fun () -> clear u) :: !temps;
@@ -58,11 +66,12 @@ let write_temp_result u r =
 let send_result s r =
   match !temps with
     | [] ->
-        write_temp_result s r;
-        propagate ();
-        List.iter (fun f -> f ()) !temps;
-        temps := [];
-        run_queue ()
+        with_run_queue begin fun () ->
+          write_temp_result s r;
+          propagate ();
+          List.iter (fun f -> f ()) !temps;
+          temps := []
+        end
     | _ -> failwith "already in update loop"
 
 let send s v = send_result s (Value v)
@@ -176,6 +185,12 @@ let join_e ee =
     end;
     rt
 
+let fix_e ef =
+  let t, u = make_event () in
+  let e = ef t in
+  notify_result_e e (send_result_deferred u);
+  e
+
 type 'a behavior = 'a t
 
 let sample = read
@@ -189,6 +204,15 @@ let notify_result_b_cancel = notify_result_cancel
 let hash_behavior = hash
 
 let join_b ?eq bb = bind ?eq bb (fun b -> b)
+
+let fix_b ?eq bf =
+  let t, u = make_changeable ?eq () in
+  let b = bf t in
+  notify_result_b b begin fun r ->
+    Queue.add (fun () -> write_result u r) q;
+    run_queue ()
+  end;
+  b
 
 let switch ?eq b e =
   if is_never e then b else

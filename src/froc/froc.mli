@@ -142,6 +142,12 @@ val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a behavior) -> ('a -> 'b
 val join_b : ?eq:('a -> 'a -> bool) -> 'a behavior behavior -> 'a behavior
   (** [join_b b] behaves as whichever behavior is currently the value of [b]. *)
 
+val fix_b : ?eq:('a -> 'a -> bool) -> ('a behavior -> 'a behavior) -> 'a behavior
+  (**
+     [fix_b bf] returns [bf b'] where [b'] behaves like [bf b'], but
+     delayed one update cycle.
+  *)
+
 val notify_b : ?current:bool -> 'a behavior -> ('a -> unit) -> unit
   (**
      Adds a listener for the value of a behavior, which is called
@@ -290,6 +296,12 @@ val collect : ('b -> 'a -> 'b) -> 'b -> 'a event -> 'b event
 
 val join_e : 'a event event -> 'a event
   (** [join_e ee] fires whenever the event last fired from [ee] fires *)
+
+val fix_e : ('a event -> 'a event) -> 'a event
+  (**
+     [fix_e ef] returns [ef e'] where [e'] is an event that fires
+     whenever [ef e'] fires, but in the next update cycle.
+  *)
 
 val hash_event : 'a event -> int
   (** A hash function for events. *)
