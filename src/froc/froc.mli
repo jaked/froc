@@ -90,14 +90,14 @@
 *)
 
 (** Type of values of type ['a] or exception. *)
-type 'a result = Value of 'a | Fail of exn
+type +'a result = Value of 'a | Fail of exn
 
 type cancel
   (** Type of handles to listener registrations. *)
 
 (** {2 Behaviors} *)
 
-type 'a behavior
+type +'a behavior
   (** Type of behaviors of type ['a]. *)
 
 val return : 'a -> 'a behavior

@@ -30,7 +30,7 @@ val make_cancel : (unit -> unit) -> cancel
 val no_cancel : cancel
 val cancel : cancel -> unit
 
-type 'a result = Value of 'a | Fail of exn
+type +'a result = Value of 'a | Fail of exn
 
 val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t * 'a u
 val return : 'a -> 'a t

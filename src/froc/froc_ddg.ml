@@ -35,7 +35,7 @@ let set_debug f =
 let handle_exn = ref raise
 let set_exn_handler h = handle_exn := h
 
-type 'a result = Value of 'a | Fail of exn
+type +'a result = Value of 'a | Fail of exn
 
 type 'a changeable = {
   id : int;
