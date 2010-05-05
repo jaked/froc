@@ -460,8 +460,8 @@ val memo :
      The unit argument makes it possible to memoize a recursive
      function, using the following idiom: {[
        let m = memo () in (* creates the memo table *)
-       let rec f x = ... memo f y in
-       let f x = memo f x
+       let rec f x = ... m f y in
+       let f x = m f x
      ]}
 
      The default hash function is not appropriate for behaviors and
