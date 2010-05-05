@@ -26,19 +26,30 @@
    Acar et al. Changeable values are presented as a monad, using ideas
    from [Lwt].
 
-   A {e changeable} is a monadic value that can change over
-   time. Binding a changeable causes the binder to be made a
-   dependency of the changeable, and to be re-executed when the
-   changeable changes. A {e writeable} associated with a changeable is
-   used to change a changeable.
+   A {e changeable} is a value that can change over time. New
+   changeables may be created from existing ones using [bind] or one
+   of its variants. When a changeable changes, the changeables which
+   depend on it are updated by running their update functions
+   (i.e. the function passed to [bind]). The dependencies of a
+   changeable are updated before the changeable is updated, so that
+   the update function sees a consistent view of the dependencies.
 
    Self-adjusting computation proceeds in phases: after an initial
    computation, call [write] to change some inputs, then [propagate]
    to make the result consistent again.
+
+   Most functions returning changeables take an optional [eq]
+   argument, which gives an equality function on the value of the
+   resulting changeable. A changeable is considered to have changed
+   only when updated with a value which is not equal (according to the
+   equality function) to the old value. The default equality holds if
+   the values [compare] to [0] (incomparable values are always not
+   equal). It is encouraged that changeables of the same type always
+   be given the same equality.
 *)
 
 val init : unit -> unit
-  (** Initialize the library. Must be called before any other function. *)
+  (** Initialize the library; can be called again to reinitialize. *)
 
 (** {2 Changeables} *)
 
@@ -50,12 +61,6 @@ type -'a u
 val changeable : ?eq:('a -> 'a -> bool) -> 'a -> 'a t * 'a u
   (**
      [changeable v] is a changeable with initial value [v].
-
-     The optional [eq] argument gives an equality function; a
-     changeable is considered changed (and its dependencies notified)
-     only if its new value is not [eq] to its old one. The default
-     equality holds iff the values [compare] to [0] (incomparable
-     values are always not equal).
   *)
 
 val return : 'a -> 'a t
@@ -72,9 +77,6 @@ val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t
   (**
      [bind c f] behaves as [f] applied to the value of [c]. If [c]
      fails, [bind c f] also fails, with the same exception.
-
-     When the value of a changeable changes, all functions [f] bound to
-     it are re-executed.
   *)
 
 val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
@@ -97,26 +99,27 @@ val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a t -> 'b t
 
 val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a t) -> 'a t
   (**
-     [catch c f] behaves the same as [c()] if [c()] succeeds. If [c()]
-     fails with some exception [e], [catch c f] behaves as [f e].
+     [catch cf f] behaves the same as [cf()] if [cf()] succeeds. If
+     [cf()] fails with some exception [e], [catch cf f] behaves as [f
+     e].
   *)
 
 val catch_lift : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a) -> 'a t
   (**
-     [catch_lift c ?eq f] is equivalent to [catch c (fun e -> return
+     [catch_lift cf ?eq f] is equivalent to [catch cf (fun e -> return
      ?eq (f e))], but is slightly more efficient.
   *)
 
 val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
   (**
-     [try_bind c f g] behaves as [bind (c()) f] if [c()] succeeds. If
-     [c()] fails with exception [e], [try_bind c f g] behaves as [g
+     [try_bind cf f g] behaves as [bind (cf()) f] if [cf()] succeeds. If
+     [cf()] fails with exception [e], [try_bind cf f g] behaves as [g
      e].
   *)
 
 val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b) -> (exn -> 'b) -> 'b t
   (**
-     [try_bind_lift c ?eq f g] is equivalent to [try_bind c (fun v ->
+     [try_bind_lift cf ?eq f g] is equivalent to [try_bind cf (fun v ->
      return ?eq (f v)) (fun e -> return ?eq (g e))], but is slightly
      more efficient.
   *)
@@ -124,9 +127,6 @@ val try_bind_lift : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b) -> (e
 val read : 'a t -> 'a
   (**
      [read c] returns the value of [c], or raises an exception if [c] fails.
-
-     You shouldn't call [read] in the context of a binder, since you
-     might get a stale result.
   *)
 
 val write : 'a u -> 'a -> unit
@@ -151,22 +151,36 @@ val memo :
   ('a -> 'b) ->
   ('a -> 'b)
   (**
-     [memo f] creates a {e memo function} from [f]. Calls to the memo
-     function are memoized and may be reused when the calling context
-     is re-executed.
 
-     [memo] does not provide general-purpose memoization; calls may be
-     reused only within the calling context in which they originally
-     occurred, and only in the original order they occurred.
+     [memo f] creates a memo function [f'] from [f]. When [f' x] is
+     called from within an update function, there may be either a hit
+     or a miss. A hit happens when some [f' x'] was called in the
+     previous run of the update function, when [eq x x'], and no later
+     call has already hit (that is, hits must happen in the same order
+     as the calls happened in the previous run). On a miss, [f' x]
+     calls [f x] and stores its value for possible reuse. On a hit,
+     [f' x] returns the value of the previous call, and any updates
+     necessary to make the value consistent are executed.
 
-     To memoize a recursive function, use the following idiom: {[
-       let m = memo () in
+     The main point of [memo] is to avoid needless recomputation in
+     cases where a computation is executed in an update function for
+     some changeable, but does not actually use the changeables's
+     value. For example, in {[
+       let g = memo () fun x -> ... in
+       c >>= fun _ -> g 7
+     ]} the returned changeable is indifferent to the value of
+     [c]. Without [memo] it would be recomputed every time [c]
+     changes; with [memo] it is computed only the first time.
+
+     The unit argument makes it possible to memoize a recursive
+     function, using the following idiom: {[
+     let m = memo () in (* creates the memo table *)
        let rec f x = ... memo f y in
        let f x = memo f x
      ]}
 
      The default hash function is not appropriate for changeables
-     (since they contain mutable data) so you should use [hash]
+     (since they contain mutable data); [hash] should be used
      instead.
   *)
 
