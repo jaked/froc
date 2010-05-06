@@ -125,6 +125,9 @@ struct
                   
 end
 
+(* ocamljs 0.2 doesn't implement caml_float_compare, force polymorphic compare *)
+let compare = compare
+
 module G =
 struct
   type point = float * float

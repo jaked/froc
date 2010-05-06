@@ -102,7 +102,8 @@ let tick () =
   check t;
   let next_id = t.next.id in
   let id =
-    let incr = int_of_float (sqrt (float_of_int (next_id - t.id))) in
+    (* lsr 0 to work around an ocamljs 0.2 bug: int_of_float doesn't truncate *)
+    let incr = int_of_float (sqrt (float_of_int (next_id - t.id))) lsr 0 in
     let id = t.id + incr in
     if id = next_id then t.id else id in (* be careful of sqrt(1) = 1; t'.id must = t.id *)
   let t' = { id = id; spliced_out = false; next = t.next; prev = t; cleanup = [] } in
@@ -132,6 +133,9 @@ let splice_out t1 t2 =
   loop t1.next;
   t1.next <- t2;
   t2.prev <- t1
+
+(* ocamljs 0.2 doesn't implement caml_int_compare, force polymorphic compare *)
+let compare = compare
 
 let compare t1 t2 =
   check t1;
