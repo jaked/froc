@@ -45,4 +45,4 @@ examples:
 
 github:
 	rsync -a --delete --exclude './' doc/ ../froc.gh-pages/doc/
-	rsync -a --delete --delete-excluded --include '*/' --exclude myocamlbuild.ml --include '*.ml' --include '*.js' --include '*.html' --include '*.css' --include '*.png' --exclude '*' examples/ ../froc.gh-pages/examples/
+	rsync -a -L --delete --delete-excluded --exclude _build/ --include '*/' --exclude myocamlbuild.ml --include '*.ml' --include '*.js' --include '*.html' --include '*.css' --include '*.png' --exclude '*' examples/ ../froc.gh-pages/examples/

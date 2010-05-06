@@ -1,9 +1,11 @@
+JS=sudoku.js
+
 all: myocamlbuild.ml
-	ocamlbuild sudoku.js server.byte
+	ocamlbuild $(JS) server.byte; ln -s _build/$(JS) .
 
 clean:
 	ocamlbuild -clean
-	rm -f myocamlbuild.ml
+	rm -f myocamlbuild.ml $(JS)
 
 myocamlbuild.ml:
 	ln -s ../../../tools/myocamlbuild.ml
