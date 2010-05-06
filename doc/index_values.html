@@ -127,8 +127,8 @@
 <td></td></tr>
 <tr><td><a href="Froc.html#VALblift">blift</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">blift b ?eq f</code> is equivalent to <code class="code">bind b (fun v -&gt; return ?eq (f
-     v))</code>, but is slightly more efficient.
+<code class="code">blift b ?eq f</code> is equivalent to <code class="code">bind b (fun v -&gt; return ?eq (f v))</code>,
+     but is slightly more efficient.
 </div>
 </td></tr>
 <tr><td><a href="Froc_sa.html#VALblift2">blift2</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
@@ -181,19 +181,19 @@ Cancels a listener registration using the given handle.
 </td></tr>
 <tr><td><a href="Froc_sa.html#VALcatch">catch</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
 <td><div class="info">
-<code class="code">catch c f</code> behaves the same as <code class="code">c()</code> if <code class="code">c()</code> succeeds.
+<code class="code">catch cf f</code> behaves the same as <code class="code">cf()</code> if <code class="code">cf()</code> succeeds.
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALcatch">catch</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Froc.html#VALcatch">catch</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">catch b f</code> behaves the same as <code class="code">b()</code> if <code class="code">b()</code> succeeds.
+<code class="code">catch bf f</code> behaves the same as <code class="code">bf()</code> if <code class="code">bf()</code> succeeds.
 </div>
 </td></tr>
 <tr><td><a href="Froc_sa.html#VALcatch_lift">catch_lift</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
 <td><div class="info">
-<code class="code">catch_lift c ?eq f</code> is equivalent to <code class="code">catch c (fun e -&gt; return
+<code class="code">catch_lift cf ?eq f</code> is equivalent to <code class="code">catch cf (fun e -&gt; return
      ?eq (f e))</code>, but is slightly more efficient.
 </div>
 </td></tr>
@@ -201,7 +201,7 @@ Cancels a listener registration using the given handle.
 <td></td></tr>
 <tr><td><a href="Froc.html#VALcatch_lift">catch_lift</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">catch_lift b ?eq f</code> is equivalent to <code class="code">catch b (fun e -&gt; return
+<code class="code">catch_lift bf ?eq f</code> is equivalent to <code class="code">catch bf (fun e -&gt; return
      ?eq (f e))</code>, but is slightly more efficient.
 </div>
 </td></tr>
@@ -214,15 +214,15 @@ Cancels a listener registration using the given handle.
 <td></td></tr>
 <tr><td><a href="Froc.html#VALchanges">changes</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">changes b</code> fires the value of <code class="code">b</code> whenever it changes.
+<code class="code">changes b</code> occurs with the value of <code class="code">b</code> whenever <code class="code">b</code> changes.
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALcleanup">cleanup</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Froc.html#VALcleanup">cleanup</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-When called in the context of a binder, adds a function to be
-     called when the binder must be re-executed.
+<code class="code">cleanup f</code> attaches <code class="code">f</code> to the enclosing dynamic scope, so it is
+     called when the scope is cleaned up.
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALclear">clear</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
@@ -245,7 +245,7 @@ When called in the context of a binder, adds a function to be
 <td></td></tr>
 <tr><td><a href="Froc.html#VALcount">count</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">count e</code> behaves as the number of times <code class="code">e</code> has fired (since
+<code class="code">count e</code> takes on the number of times <code class="code">e</code> has occurred (since
      <code class="code">count</code> was called).
 </div>
 </td></tr>
@@ -277,7 +277,20 @@ When called in the context of a binder, adds a function to be
 <td></td></tr>
 <tr><td><a href="Froc.html#VALfilter">filter</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">filter p e</code> is an event that fires <code class="code">v</code> whenever <code class="code">e</code> fires <code class="code">v</code> and <code class="code">p v</code> is true.
+<code class="code">filter p e</code> is an event that fires <code class="code">v</code> whenever <code class="code">e</code> fires <code class="code">v</code>
+     and <code class="code">p v</code> is true.
+</div>
+</td></tr>
+<tr><td><a href="Froc.html#VALfix_b">fix_b</a> [<a href="Froc.html">Froc</a>]</td>
+<td><div class="info">
+<code class="code">fix_b bf</code> returns <code class="code">bf b'</code> where <code class="code">b'</code> behaves like <code class="code">bf b'</code>, but
+     delayed one update cycle.
+</div>
+</td></tr>
+<tr><td><a href="Froc.html#VALfix_e">fix_e</a> [<a href="Froc.html">Froc</a>]</td>
+<td><div class="info">
+<code class="code">fix_e ef</code> returns <code class="code">ef e'</code> where <code class="code">e'</code> is an event that occurs
+     whenever <code class="code">ef e'</code> occurs, but in the next update cycle.
 </div>
 </td></tr>
 <tr><td align="left"><br>H</td></tr>
@@ -290,7 +303,7 @@ A hash function for changeables,
 <td></td></tr>
 <tr><td><a href="Froc.html#VALhash_behavior">hash_behavior</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-A hash function for behaviors,
+A hash function for behaviors.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALhash_event">hash_event</a> [<a href="Froc.html">Froc</a>]</td>
@@ -300,8 +313,8 @@ A hash function for events.
 </td></tr>
 <tr><td><a href="Froc.html#VALhold">hold</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">hold v e</code> behaves as the last value fired by <code class="code">e</code>, or <code class="code">v</code> if <code class="code">e</code>
-     has not yet fired a value (since <code class="code">hold</code> was called).
+<code class="code">hold v e</code> takes on the last value which occurred on <code class="code">e</code>, or
+     <code class="code">v</code> if <code class="code">e</code> has not yet occurred (since <code class="code">hold</code> was called).
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALhold_result">hold_result</a> [<a href="Froc.html">Froc</a>]</td>
@@ -312,14 +325,14 @@ Same as <code class="code">hold</code> but initialized with a result.
 <tr><td align="left"><br>I</td></tr>
 <tr><td><a href="Froc_sa.html#VALinit">init</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
 <td><div class="info">
-Initialize the library.
+Initialize the library; can be called again to reinitialize.
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALinit">init</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Froc.html#VALinit">init</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-Initialize the library.
+Initialize the library; can be called again to reinitialize.
 </div>
 </td></tr>
 <tr><td><a href="Froc_dom.html#VALinput_value_b">input_value_b</a> [<a href="Froc_dom.html">Froc_dom</a>]</td>
@@ -336,7 +349,8 @@ Initialize the library.
 </td></tr>
 <tr><td><a href="Froc.html#VALjoin_e">join_e</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">join_e ee</code> fires whenever the event last fired from <code class="code">ee</code> fires
+<code class="code">join_e ee</code> occurs whenever the event which last occurred on <code class="code">ee</code>
+     occurs.
 </div>
 </td></tr>
 <tr><td align="left"><br>L</td></tr>
@@ -413,29 +427,30 @@ Initialize the library.
 <td></td></tr>
 <tr><td><a href="Froc.html#VALmake_event">make_event</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-Makes a new channel for events of type <code class="code">'a</code>.
+Makes a new event taking values of type <code class="code">'a</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALmap">map</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">map f e</code> is an event that fires <code class="code">f v</code> whenever <code class="code">e</code> fires <code class="code">v</code>.
+<code class="code">map f e</code> is an event that fires <code class="code">f v</code> whenever <code class="code">e</code> fires
+     <code class="code">v</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc_sa.html#VALmemo">memo</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
 <td><div class="info">
-<code class="code">memo f</code> creates a <em>memo function</em> from <code class="code">f</code>.
+<code class="code">memo f</code> creates a memo function <code class="code">f'</code> from <code class="code">f</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALmemo">memo</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Froc.html#VALmemo">memo</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">memo f</code> creates a <em>memo function</em> from <code class="code">f</code>.
+<code class="code">memo f</code> creates a memo function <code class="code">f'</code> from <code class="code">f</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALmerge">merge</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">merge es</code> is an event that fires whenever any of the events in <code class="code">e</code> fire.
+<code class="code">merge es</code> occurs whenever any of the events in <code class="code">es</code> occurs.
 </div>
 </td></tr>
 <tr><td><a href="Froc_dom.html#VALmouse_b">mouse_b</a> [<a href="Froc_dom.html">Froc_dom</a>]</td>
@@ -450,7 +465,8 @@ An event which never occurs.
 </td></tr>
 <tr><td><a href="Froc.html#VALnext">next</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">next e</code> fires just the next occurence of <code class="code">e</code>.
+<code class="code">next e</code> passes on only the next occurence of <code class="code">e</code>; subsequent
+     occurrences are dropped.
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALno_cancel">no_cancel</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
@@ -464,28 +480,28 @@ Dummy cancel.
 <td></td></tr>
 <tr><td><a href="Froc.html#VALnotify_b">notify_b</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-Adds a listener for the value of a behavior, which is called
-     whenever the value changes.
+<code class="code">notify_b b f</code> adds <code class="code">f</code> as a listener for <code class="code">b</code>, which is called
+     whenever <code class="code">b</code> changes.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALnotify_b_cancel">notify_b_cancel</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
 Same as <code class="code">notify_b</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).
+     is still cancelled when the enclosing dynamic scope is cleaned up).
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALnotify_cancel">notify_cancel</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Froc.html#VALnotify_e">notify_e</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-Adds a listener on the channel, which is called whenever a value
-     is sent on it.
+<code class="code">notify_e e f</code> adds <code class="code">f</code> as a listener for <code class="code">e</code>, which is called
+     with <code class="code">v</code> whenever <code class="code">e</code> occurs with value <code class="code">v</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALnotify_e_cancel">notify_e_cancel</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
 Same as <code class="code">notify_e</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).
+     is still cancelled when the enclosing dynamic scope is cleaned up).
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALnotify_result">notify_result</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
@@ -498,8 +514,9 @@ Same as <code class="code">notify_b</code> but the listener is called with a res
 </td></tr>
 <tr><td><a href="Froc.html#VALnotify_result_b_cancel">notify_result_b_cancel</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-Same as <code class="code">notify_b_cancel</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).
+Same as <code class="code">notify_result_b</code>, and returns a cancel handle (the
+     notification is still cancelled when the enclosing dynamic scope
+     is cleaned up).
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALnotify_result_cancel">notify_result_cancel</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
@@ -512,8 +529,9 @@ Same as <code class="code">notify_e</code> but the listener is called with a res
 </td></tr>
 <tr><td><a href="Froc.html#VALnotify_result_e_cancel">notify_result_e_cancel</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-Same as <code class="code">notify_e_cancel</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).
+Same as <code class="code">notify_result_e</code>, and returns a cancel handle (the
+     notification is still cancelled when the enclosing dynamic scope
+     is cleaned up).
 </div>
 </td></tr>
 <tr><td align="left"><br>P</td></tr>
@@ -562,32 +580,38 @@ Same as <code class="code">sample</code> but returns a result.
 </td></tr>
 <tr><td><a href="Froc.html#VALsend">send</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">send e v</code> calls the listeners of the associated event with <code class="code">Value v</code>.
+<code class="code">send s v</code> sends the value <code class="code">v</code> to the associated event <code class="code">e</code>, so
+     <code class="code">e</code> occurs with value <code class="code">v</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALsend_deferred">send_deferred</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">send e v</code> calls the listeners of the associated event with <code class="code">Value v</code> in the next update cycle.
+<code class="code">send_deferred s v</code> enqueues a call to <code class="code">send s v</code> for a future
+     update cycle.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALsend_exn">send_exn</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">send_exn e x</code> calls the listeners of the associated event with <code class="code">Fail x</code>.
+<code class="code">send_exn s x</code> sends the failure <code class="code">x</code> to the associated event <code class="code">e</code>,
+     so <code class="code">e</code> occurs with failure <code class="code">x</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALsend_exn_deferred">send_exn_deferred</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">send_exn e x</code> calls the listeners of the associated event with <code class="code">Fail x</code> in the next update cycle.
+<code class="code">send_exn_deferred s x</code> enqueues a call to <code class="code">send_exn s x</code> for a
+     future update cycle.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALsend_result">send_result</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">send_result e r</code> calls the listeners of the associated event with <code class="code">r</code>.
+<code class="code">send_result s r</code> sends the result <code class="code">r</code> to the associated event
+     <code class="code">e</code>, so <code class="code">e</code> occurs with result <code class="code">r</code>.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALsend_result_deferred">send_result_deferred</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">send_result e r</code> calls the listeners of the associated event with <code class="code">r</code> in the next update cycle.
+<code class="code">send_result_deferred s r</code> enqueues a call to <code class="code">send_result s r</code>
+     for a future update cycle.
 </div>
 </td></tr>
 <tr><td><a href="Froc_sa.html#VALset_debug">set_debug</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
@@ -607,12 +631,13 @@ Set a function for showing library debugging.
 <tr><td><a href="Froc.html#VALset_exn_handler">set_exn_handler</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
 Set an exception handler which is called on exceptions from
-     notification functions.
+     listeners.
 </div>
 </td></tr>
 <tr><td><a href="Froc.html#VALswitch">switch</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">switch b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> fires, then behaves as the last value of <code class="code">e</code>.
+<code class="code">switch b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> occurs, then behaves as the
+     last value of <code class="code">e</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>T</td></tr>
@@ -622,19 +647,20 @@ Set an exception handler which is called on exceptions from
 <td></td></tr>
 <tr><td><a href="Froc_sa.html#VALtry_bind">try_bind</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
 <td><div class="info">
-<code class="code">try_bind c f g</code> behaves as <code class="code">bind (c()) f</code> if <code class="code">c()</code> succeeds.
+<code class="code">try_bind cf f g</code> behaves as <code class="code">bind (cf()) f</code> if <code class="code">cf()</code> succeeds.
 </div>
 </td></tr>
 <tr><td><a href="Froc_ddg.html#VALtry_bind">try_bind</a> [<a href="Froc_ddg.html">Froc_ddg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Froc.html#VALtry_bind">try_bind</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">try_bind b f g</code> behaves as <code class="code">bind (b()) f</code> if <code class="code">b()</code> succeeds.
+<code class="code">try_bind bf f g</code> behaves as <code class="code">bind (bf()) f</code> if <code class="code">bf()</code>
+     succeeds.
 </div>
 </td></tr>
 <tr><td><a href="Froc_sa.html#VALtry_bind_lift">try_bind_lift</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>
 <td><div class="info">
-<code class="code">try_bind_lift c ?eq f g</code> is equivalent to <code class="code">try_bind c (fun v -&gt;
+<code class="code">try_bind_lift cf ?eq f g</code> is equivalent to <code class="code">try_bind cf (fun v -&gt;
      return ?eq (f v)) (fun e -&gt; return ?eq (g e))</code>, but is slightly
      more efficient.
 </div>
@@ -643,7 +669,7 @@ Set an exception handler which is called on exceptions from
 <td></td></tr>
 <tr><td><a href="Froc.html#VALtry_bind_lift">try_bind_lift</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">try_bind_lift b ?eq f g</code> is equivalent to <code class="code">try_bind b (fun v -&gt;
+<code class="code">try_bind_lift bf ?eq f g</code> is equivalent to <code class="code">try_bind bf (fun v -&gt;
      return ?eq (f v)) (fun e -&gt; return ?eq (g e))</code>, but is slightly
      more efficient.
 </div>
@@ -651,7 +677,8 @@ Set an exception handler which is called on exceptions from
 <tr><td align="left"><br>U</td></tr>
 <tr><td><a href="Froc.html#VALuntil">until</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">until b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> fires <code class="code">b'</code>, then behaves as <code class="code">b'</code>
+<code class="code">until b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> occurs with value <code class="code">b'</code>, then
+     behaves as <code class="code">b'</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>W</td></tr>

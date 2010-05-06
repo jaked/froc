@@ -38,18 +38,30 @@
    from <code class="code">Lwt</code>.
 <p>
 
-   A <em>changeable</em> is a monadic value that can change over
-   time. Binding a changeable causes the binder to be made a
-   dependency of the changeable, and to be re-executed when the
-   changeable changes. A <em>writeable</em> associated with a changeable is
-   used to change a changeable.
+   A <em>changeable</em> is a value that can change over time. New
+   changeables may be created from existing ones using <code class="code">bind</code> or one
+   of its variants. When a changeable changes, the changeables which
+   depend on it are updated by running their update functions
+   (i.e. the function passed to <code class="code">bind</code>). The dependencies of a
+   changeable are updated before the changeable is updated, so that
+   the update function sees a consistent view of the dependencies.
 <p>
 
    Self-adjusting computation proceeds in phases: after an initial
    computation, call <code class="code">write</code> to change some inputs, then <code class="code">propagate</code>
-   to make the result consistent again.<br>
+   to make the result consistent again.
+<p>
+
+   Most functions returning changeables take an optional <code class="code">eq</code>
+   argument, which gives an equality function on the value of the
+   resulting changeable. A changeable is considered to have changed
+   only when updated with a value which is not equal (according to the
+   equality function) to the old value. The default equality holds if
+   the values <code class="code">compare</code> to <code class="code">0</code> (incomparable values are always not
+   equal). It is encouraged that changeables of the same type always
+   be given the same equality.<br>
 <pre><span class="keyword">val</span> <a name="VALinit"></a>init : <code class="type">unit -> unit</code></pre><div class="info">
-Initialize the library. Must be called before any other function.<br>
+Initialize the library; can be called again to reinitialize.<br>
 </div>
 <br>
 <a name="2_Changeables"></a>
@@ -65,14 +77,7 @@ Type of writeables of type <code class="code">'a</code>.<br>
 </div>
 
 <pre><span class="keyword">val</span> <a name="VALchangeable"></a>changeable : <code class="type">?eq:('a -> 'a -> bool) -> 'a -> 'a <a href="Froc_sa.html#TYPEt">t</a> * 'a <a href="Froc_sa.html#TYPEu">u</a></code></pre><div class="info">
-<code class="code">changeable v</code> is a changeable with initial value <code class="code">v</code>.
-<p>
-
-     The optional <code class="code">eq</code> argument gives an equality function; a
-     changeable is considered changed (and its dependencies notified)
-     only if its new value is not <code class="code">eq</code> to its old one. The default
-     equality holds iff the values <code class="code">compare</code> to <code class="code">0</code> (incomparable
-     values are always not equal).<br>
+<code class="code">changeable v</code> is a changeable with initial value <code class="code">v</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALreturn"></a>return : <code class="type">'a -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
 <code class="code">return v</code> is a constant changeable with value <code class="code">v</code>.<br>
@@ -82,11 +87,7 @@ Type of writeables of type <code class="code">'a</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALbind"></a>bind : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc_sa.html#TYPEt">t</a> -> ('b -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
 <code class="code">bind c f</code> behaves as <code class="code">f</code> applied to the value of <code class="code">c</code>. If <code class="code">c</code>
-     fails, <code class="code">bind c f</code> also fails, with the same exception.
-<p>
-
-     When the value of a changeable changes, all functions <code class="code">f</code> bound to
-     it are re-executed.<br>
+     fails, <code class="code">bind c f</code> also fails, with the same exception.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VAL(>>=)"></a>(&gt;&gt;=) : <code class="type">'a <a href="Froc_sa.html#TYPEt">t</a> -> ('a -> 'b <a href="Froc_sa.html#TYPEt">t</a>) -> 'b <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
 <code class="code">c &gt;&gt;= f</code> is an alternative notation for <code class="code">bind c f</code>.<br>
@@ -101,29 +102,26 @@ Type of writeables of type <code class="code">'a</code>.<br>
      binding it to a changeable.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALcatch"></a>catch : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> (exn -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
-<code class="code">catch c f</code> behaves the same as <code class="code">c()</code> if <code class="code">c()</code> succeeds. If <code class="code">c()</code>
-     fails with some exception <code class="code">e</code>, <code class="code">catch c f</code> behaves as <code class="code">f e</code>.<br>
+<code class="code">catch cf f</code> behaves the same as <code class="code">cf()</code> if <code class="code">cf()</code> succeeds. If
+     <code class="code">cf()</code> fails with some exception <code class="code">e</code>, <code class="code">catch cf f</code> behaves as <code class="code">f
+     e</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALcatch_lift"></a>catch_lift : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> (exn -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
-<code class="code">catch_lift c ?eq f</code> is equivalent to <code class="code">catch c (fun e -&gt; return
+<code class="code">catch_lift cf ?eq f</code> is equivalent to <code class="code">catch cf (fun e -&gt; return
      ?eq (f e))</code>, but is slightly more efficient.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALtry_bind"></a>try_bind : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'b <a href="Froc_sa.html#TYPEt">t</a>) -><br>       ('b -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> (exn -> 'a <a href="Froc_sa.html#TYPEt">t</a>) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
-<code class="code">try_bind c f g</code> behaves as <code class="code">bind (c()) f</code> if <code class="code">c()</code> succeeds. If
-     <code class="code">c()</code> fails with exception <code class="code">e</code>, <code class="code">try_bind c f g</code> behaves as <code class="code">g
+<code class="code">try_bind cf f g</code> behaves as <code class="code">bind (cf()) f</code> if <code class="code">cf()</code> succeeds. If
+     <code class="code">cf()</code> fails with exception <code class="code">e</code>, <code class="code">try_bind cf f g</code> behaves as <code class="code">g
      e</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALtry_bind_lift"></a>try_bind_lift : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'b <a href="Froc_sa.html#TYPEt">t</a>) -> ('b -> 'a) -> (exn -> 'a) -> 'a <a href="Froc_sa.html#TYPEt">t</a></code></pre><div class="info">
-<code class="code">try_bind_lift c ?eq f g</code> is equivalent to <code class="code">try_bind c (fun v -&gt;
+<code class="code">try_bind_lift cf ?eq f g</code> is equivalent to <code class="code">try_bind cf (fun v -&gt;
      return ?eq (f v)) (fun e -&gt; return ?eq (g e))</code>, but is slightly
      more efficient.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALread"></a>read : <code class="type">'a <a href="Froc_sa.html#TYPEt">t</a> -> 'a</code></pre><div class="info">
-<code class="code">read c</code> returns the value of <code class="code">c</code>, or raises an exception if <code class="code">c</code> fails.
-<p>
-
-     You shouldn't call <code class="code">read</code> in the context of a binder, since you
-     might get a stale result.<br>
+<code class="code">read c</code> returns the value of <code class="code">c</code>, or raises an exception if <code class="code">c</code> fails.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALwrite"></a>write : <code class="type">'a <a href="Froc_sa.html#TYPEu">u</a> -> 'a -> unit</code></pre><div class="info">
 <code class="code">write w v</code> updates the value of the associated changeable
@@ -139,24 +137,36 @@ Type of writeables of type <code class="code">'a</code>.<br>
 Process any outstanding changes so all changeables are consistent.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALmemo"></a>memo : <code class="type">?size:int -><br>       ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit -> ('a -> 'b) -> 'a -> 'b</code></pre><div class="info">
-<code class="code">memo f</code> creates a <em>memo function</em> from <code class="code">f</code>. Calls to the memo
-     function are memoized and may be reused when the calling context
-     is re-executed.
+<code class="code">memo f</code> creates a memo function <code class="code">f'</code> from <code class="code">f</code>. When <code class="code">f' x</code> is
+     called from within an update function, there may be either a hit
+     or a miss. A hit happens when some <code class="code">f' x'</code> was called in the
+     previous run of the update function, when <code class="code">eq x x'</code>, and no later
+     call has already hit (that is, hits must happen in the same order
+     as the calls happened in the previous run). On a miss, <code class="code">f' x</code>
+     calls <code class="code">f x</code> and stores its value for possible reuse. On a hit,
+     <code class="code">f' x</code> returns the value of the previous call, and any updates
+     necessary to make the value consistent are executed.
 <p>
 
-     <code class="code">memo</code> does not provide general-purpose memoization; calls may be
-     reused only within the calling context in which they originally
-     occurred, and only in the original order they occurred.
+     The main point of <code class="code">memo</code> is to avoid needless recomputation in
+     cases where a computation is executed in an update function for
+     some changeable, but does not actually use the changeables's
+     value. For example, in <pre><code class="code">       let g = memo () fun x -&gt; ... in
+       c &gt;&gt;= fun _ -&gt; g 7
+     </code></pre> the returned changeable is indifferent to the value of
+     <code class="code">c</code>. Without <code class="code">memo</code> it would be recomputed every time <code class="code">c</code>
+     changes; with <code class="code">memo</code> it is computed only the first time.
 <p>
 
-     To memoize a recursive function, use the following idiom: <pre><code class="code">       let m = memo () in
-       let rec f x = ... memo f y in
-       let f x = memo f x
+     The unit argument makes it possible to memoize a recursive
+     function, using the following idiom: <pre><code class="code">     let m = memo () in (* creates the memo table *)
+       let rec f x = ... m f y in
+       let f x = m f x
      </code></pre>
 <p>
 
      The default hash function is not appropriate for changeables
-     (since they contain mutable data) so you should use <code class="code">hash</code>
+     (since they contain mutable data); <code class="code">hash</code> should be used
      instead.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALhash"></a>hash : <code class="type">'a <a href="Froc_sa.html#TYPEt">t</a> -> int</code></pre><div class="info">

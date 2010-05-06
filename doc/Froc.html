@@ -17,9 +17,10 @@
 <link title="Froc_sa" rel="Chapter" href="Froc_sa.html"><link title="Overview" rel="Section" href="#2_Overview">
 <link title="Behaviors" rel="Section" href="#2_Behaviors">
 <link title="Events" rel="Section" href="#2_Events">
-<link title="Combinations of behaviors and events" rel="Section" href="#2_Combinationsofbehaviorsandevents">
-<link title="Variations" rel="Section" href="#2_Variations">
+<link title="Combinations" rel="Section" href="#2_Combinations">
+<link title="Other" rel="Section" href="#2_Other">
 <link title="Debugging" rel="Section" href="#2_Debugging">
+<link title="Variations" rel="Section" href="#2_Variations">
 <title>Froc</title>
 </head>
 <body>
@@ -36,52 +37,73 @@
 <p>
 
    <code class="code">Froc</code> implements functional reactive programming in the style of
-   FrTime / Flapjax (but typed). It uses the dynamic dependency graph
-   of Acar et al. (self-adjusting computation). Behaviors are
-   presented as monadic values, using ideas from <code class="code">Lwt</code>.
+   FrTime / Flapjax (but typed of course). It uses the dynamic
+   dependency graph of Acar et al. (self-adjusting
+   computation). Behaviors are presented as monadic values, using
+   ideas from <code class="code">Lwt</code>.
 <p>
 
-   A <em>behavior</em> is a monadic value that can change over
-   time. Binding a behavior causes the binder to be made a dependency
-   of the behavior, and to be re-executed when the behavior changes.
+   A <em>behavior</em> is a value that can change over time, but is defined
+   at all times. An <em>event</em> is defined only at particular instants
+   in time, with a possibly different value at each instance; when an
+   event takes value <code class="code">v</code> we say it <em>occurs with value</em> <code class="code">v</code> or <em>   fires</em> <code class="code">v</code>. Values are sent to an event using the associated <em>   event sender</em>. A behavior or an event is a <em>signal</em> when we don't
+   care to specify which one it is, and we say a signal "changes" to
+   mean that it changes if it is a behavior or occurs if it is an
+   event.
 <p>
 
-   An <em>event</em> is a channel over which values may be sent (using the
-   associated <em>event_sender</em>). Listeners on the channel are notified
-   when an event occurs (i.e. a value is sent on the channel).
+   Most of the functions in <code class="code">Froc</code> create a new signal from one or
+   more existing signals. The output signals are <em>dependents</em> of the
+   input signals and the inputs are the <em>dependencies</em> of the
+   outputs. When a signal changes, its dependents are updated
+   (according to some update function specific to the signal). The
+   dependencies of a signal are updated before the signal is updated,
+   so that the update function sees a consistent view of the
+   dependencies. Signals may have <em>listeners</em> which are <em>notified</em>
+   when the signal changes. Listeners are like dependents but don't
+   compute new signals; they are just functions, called for their
+   effect.
 <p>
 
-   Sent events are queued; after each event in the queue is sent and
-   its listeners notified, the dependency graph is processed to update
-   any affected behaviors in a consistent way.
+   When an event is sent (with <code class="code">send</code>), an <em>update cycle</em> begins,
+   during which the transitive dependents of the initial event are
+   updated, and their listeners notified. It is not allowed to call
+   <code class="code">send</code> again until the update cycle is finished, but
+   <code class="code">send_deferred</code> may be called, which queues the event. Queued
+   events are processed (each in a new update cycle) following each
+   update cycle until the queue is empty. Events occurring in the same
+   update cycle are <em>simultaneous</em>.
 <p>
 
-   When a dependency of a behavior must be re-executed, all resources
-   (i.e. binds and notifies) used in the previous execution are
-   released, and all cleanup functions set in the previous execution
-   are run (see <code class="code">cleanup</code>).<br>
-<pre><span class="keyword">val</span> <a name="VALinit"></a>init : <code class="type">unit -> unit</code></pre><div class="info">
-Initialize the library. Must be called before any other function.<br>
-</div>
-<pre><span class="keyword">type</span> <a name="TYPEcancel"></a><code class="type"></code>cancel </pre>
-<div class="info">
-Type of handles to listener registrations.<br>
-</div>
+   The body of a listener or update function (such as the function
+   passed to <code class="code">bind</code>) delimits a <em>dynamic scope</em>, which is <em>   governed</em> by the signals to which it is attached. When a signal
+   changes, listeners and dependents attached within the dynamic
+   scopes it governs are detached, and any attached <code class="code">cleanup</code>
+   functions are called. This cleanup allows unneeded values to be
+   garbage collected, and also prevents them from being recomputed
+   unnecessarily or erroneously. Dynamic scopes are nested; cleaning
+   up an enclosing scope cleans up its enclosed scopes. Attachments
+   created outside any dynamic scope can only be detached by calling
+   <code class="code">init</code>.
+<p>
 
-<pre><span class="keyword">val</span> <a name="VALno_cancel"></a>no_cancel : <code class="type"><a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
-Dummy cancel.<br>
-</div>
-<pre><span class="keyword">val</span> <a name="VALcancel"></a>cancel : <code class="type"><a href="Froc.html#TYPEcancel">cancel</a> -> unit</code></pre><div class="info">
-Cancels a listener registration using the given handle.<br>
-</div>
-<br>
-<a name="2_Behaviors"></a>
-<h2>Behaviors</h2><br>
-<pre><span class="keyword">type</span> <a name="TYPEbehavior"></a><code class="type">'a</code> behavior </pre>
-<div class="info">
-Type of behaviors of type <code class="code">'a</code>.<br>
-</div>
+   Ordinarily, the entirety of a dynamic scope is cleaned up when its
+   governing signal changes. A dynamic scope may be partially cleaned
+   up using a <em>memo function</em> (see <code class="code">memo</code>). It is possible (though
+   not encouraged) to hold a reference to a signal (by storing it in a
+   <code class="code">ref</code>, for instance) after it has been detached from its
+   dependencies; a detached signal is not updated when its
+   dependencies change.
+<p>
 
+   Most functions returning behaviors take an optional <code class="code">eq</code> argument,
+   which gives an equality function on the value of the resulting
+   behavior. A behavior's dependents are only updated when the
+   behavior is updated with a value which is not equal (according to
+   the equality function) to the old value. The default equality holds
+   if the values <code class="code">compare</code> to <code class="code">0</code> (incomparable values are always not
+   equal). It is encouraged that behaviors of the same type always be
+   given the same equality.<br>
 <br><code><span class="keyword">type</span> <a name="TYPEresult"></a><code class="type">'a</code> result = </code><table class="typetable">
 <tr>
 <td align="left" valign="top" >
@@ -102,6 +124,19 @@ Type of behaviors of type <code class="code">'a</code>.<br>
 Type of values of type <code class="code">'a</code> or exception.<br>
 </div>
 
+<pre><span class="keyword">type</span> <a name="TYPEcancel"></a><code class="type"></code>cancel </pre>
+<div class="info">
+Type of handles to listener registrations.<br>
+</div>
+
+<br>
+<a name="2_Behaviors"></a>
+<h2>Behaviors</h2><br>
+<pre><span class="keyword">type</span> <a name="TYPEbehavior"></a><code class="type">+'a</code> behavior </pre>
+<div class="info">
+Type of behaviors of type <code class="code">'a</code>.<br>
+</div>
+
 <pre><span class="keyword">val</span> <a name="VALreturn"></a>return : <code class="type">'a -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
 <code class="code">return v</code> is a constant behavior with value <code class="code">v</code>.<br>
 </div>
@@ -110,18 +145,15 @@ Type of values of type <code class="code">'a</code> or exception.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALbind"></a>bind : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
 <code class="code">bind b f</code> behaves as <code class="code">f</code> applied to the value of <code class="code">b</code>. If <code class="code">b</code>
-     fails, <code class="code">bind b f</code> also fails, with the same exception.
-<p>
-
-     When the value of a behavior changes, all functions <code class="code">f</code> bound to
-     it are re-executed.<br>
+     fails, <code class="code">bind b f</code> also fails, with the same exception. The update
+     function <code class="code">f</code> delimits a dynamic scope governed by <code class="code">b</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VAL(>>=)"></a>(&gt;&gt;=) : <code class="type">'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a -> 'b <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'b <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
 <code class="code">b &gt;&gt;= f</code> is an alternative notation for <code class="code">bind b f</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALblift"></a>blift : <code class="type">?eq:('a -> 'a -> bool) -> 'b <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">blift b ?eq f</code> is equivalent to <code class="code">bind b (fun v -&gt; return ?eq (f
-     v))</code>, but is slightly more efficient.<br>
+<code class="code">blift b ?eq f</code> is equivalent to <code class="code">bind b (fun v -&gt; return ?eq (f v))</code>,
+     but is slightly more efficient.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALlift"></a>lift : <code class="type">?eq:('a -> 'a -> bool) -> ('b -> 'a) -> 'b <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
 <code class="code">lift ?eq f b</code> is equivalent to <code class="code">blift b ?eq f</code>; it can be
@@ -136,204 +168,274 @@ Type of values of type <code class="code">'a</code> or exception.<br>
 Same as <code class="code">sample</code> but returns a result.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALcatch"></a>catch : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> (exn -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">catch b f</code> behaves the same as <code class="code">b()</code> if <code class="code">b()</code> succeeds. If <code class="code">b()</code>
-     fails with some exception <code class="code">e</code>, <code class="code">catch b f</code> behaves as <code class="code">f e</code>.<br>
+<code class="code">catch bf f</code> behaves the same as <code class="code">bf()</code> if <code class="code">bf()</code> succeeds. If
+     <code class="code">bf()</code> fails with some exception <code class="code">e</code>, <code class="code">catch bf f</code> behaves as <code class="code">f
+     e</code>. The function <code class="code">f</code> delimits a dynamic scope governed by <code class="code">bf()</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALcatch_lift"></a>catch_lift : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> (exn -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">catch_lift b ?eq f</code> is equivalent to <code class="code">catch b (fun e -&gt; return
+<code class="code">catch_lift bf ?eq f</code> is equivalent to <code class="code">catch bf (fun e -&gt; return
      ?eq (f e))</code>, but is slightly more efficient.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALtry_bind"></a>try_bind : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'b <a href="Froc.html#TYPEbehavior">behavior</a>) -><br>       ('b -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> (exn -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">try_bind b f g</code> behaves as <code class="code">bind (b()) f</code> if <code class="code">b()</code> succeeds. If
-     <code class="code">b()</code> fails with exception <code class="code">e</code>, <code class="code">try_bind b f g</code> behaves as <code class="code">g
-     e</code>.<br>
+<code class="code">try_bind bf f g</code> behaves as <code class="code">bind (bf()) f</code> if <code class="code">bf()</code>
+     succeeds. If <code class="code">bf()</code> fails with exception <code class="code">e</code>, <code class="code">try_bind b f g</code>
+     behaves as <code class="code">g e</code>. The functions <code class="code">f</code> and <code class="code">g</code> each delimit a
+     dynamic scope governed by <code class="code">bf()</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALtry_bind_lift"></a>try_bind_lift : <code class="type">?eq:('a -> 'a -> bool) -><br>       (unit -> 'b <a href="Froc.html#TYPEbehavior">behavior</a>) -> ('b -> 'a) -> (exn -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">try_bind_lift b ?eq f g</code> is equivalent to <code class="code">try_bind b (fun v -&gt;
+<code class="code">try_bind_lift bf ?eq f g</code> is equivalent to <code class="code">try_bind bf (fun v -&gt;
      return ?eq (f v)) (fun e -&gt; return ?eq (g e))</code>, but is slightly
      more efficient.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALjoin_b"></a>join_b : <code class="type">?eq:('a -> 'a -> bool) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
 <code class="code">join_b b</code> behaves as whichever behavior is currently the value of <code class="code">b</code>.<br>
 </div>
+<pre><span class="keyword">val</span> <a name="VALfix_b"></a>fix_b : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('a <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
+<code class="code">fix_b bf</code> returns <code class="code">bf b'</code> where <code class="code">b'</code> behaves like <code class="code">bf b'</code>, but
+     delayed one update cycle.<br>
+</div>
 <pre><span class="keyword">val</span> <a name="VALnotify_b"></a>notify_b : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a -> unit) -> unit</code></pre><div class="info">
-Adds a listener for the value of a behavior, which is called
-     whenever the value changes. When the behavior fails the listener
-     is not called. The notification is implicitly cancelled when the
-     calling context is re-run.
+<code class="code">notify_b b f</code> adds <code class="code">f</code> as a listener for <code class="code">b</code>, which is called
+     whenever <code class="code">b</code> changes. When <code class="code">b</code> fails the listener is not
+     called. The notification is cancelled when the enclosing dynamic
+     scope is cleaned up.
 <p>
 
      The listener is called immediately with the current value of the
-     behavior, unless <code class="code">current</code> is false.<br>
+     behavior, unless <code class="code">current</code> is false. The function <code class="code">f</code> delimits a
+     dynamic scope governed by <code class="code">b</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnotify_b_cancel"></a>notify_b_cancel : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
 Same as <code class="code">notify_b</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).<br>
+     is still cancelled when the enclosing dynamic scope is cleaned up).<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnotify_result_b"></a>notify_result_b : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> unit</code></pre><div class="info">
 Same as <code class="code">notify_b</code> but the listener is called with a result when
      the value changes or when the behavior fails.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnotify_result_b_cancel"></a>notify_result_b_cancel : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
-Same as <code class="code">notify_b_cancel</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).<br>
-</div>
-<pre><span class="keyword">val</span> <a name="VALcleanup"></a>cleanup : <code class="type">(unit -> unit) -> unit</code></pre><div class="info">
-When called in the context of a binder, adds a function to be
-     called when the binder must be re-executed. You can use this to
-     clean up external resources.
-<p>
-
-     Binds and notifies in the context of a binder are cleaned up
-     automatically.<br>
-</div>
-<pre><span class="keyword">val</span> <a name="VALmemo"></a>memo : <code class="type">?size:int -><br>       ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit -> ('a -> 'b) -> 'a -> 'b</code></pre><div class="info">
-<code class="code">memo f</code> creates a <em>memo function</em> from <code class="code">f</code>. Calls to the memo
-     function are memoized and may be reused when the calling context
-     is re-executed.
-<p>
-
-     <code class="code">memo</code> does not provide general-purpose memoization; calls may be
-     reused only within the calling context in which they originally
-     occurred, and only in the original order they occurred.
-<p>
-
-     To memoize a recursive function, use the following idiom: <pre><code class="code">       let m = memo () in
-       let rec f x = ... memo f y in
-       let f x = memo f x
-     </code></pre>
-<p>
-
-     The default hash function is not appropriate for behaviors and
-     events (since they contain mutable data) so you should use
-     <code class="code">hash_behavior</code> and <code class="code">hash_event</code> instead.<br>
+Same as <code class="code">notify_result_b</code>, and returns a cancel handle (the
+     notification is still cancelled when the enclosing dynamic scope
+     is cleaned up).<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALhash_behavior"></a>hash_behavior : <code class="type">'a <a href="Froc.html#TYPEbehavior">behavior</a> -> int</code></pre><div class="info">
-A hash function for behaviors,<br>
+A hash function for behaviors. <code class="code">Hashtbl.hash</code> is not appropriate
+     because behaviors contain mutable data.<br>
 </div>
 <br>
 <a name="2_Events"></a>
 <h2>Events</h2><br>
 <pre><span class="keyword">type</span> <a name="TYPEevent"></a><code class="type">+'a</code> event </pre>
 <div class="info">
-Type of events of type <code class="code">'a</code>.<br>
+Type of events taking values of type <code class="code">'a</code>.<br>
 </div>
 
 <pre><span class="keyword">type</span> <a name="TYPEevent_sender"></a><code class="type">-'a</code> event_sender </pre>
 <div class="info">
-Type of event senders of type <code class="code">'a</code>.<br>
+Type of event senders sending values of type <code class="code">'a</code>.<br>
 </div>
 
 <pre><span class="keyword">val</span> <a name="VALmake_event"></a>make_event : <code class="type">unit -> 'a <a href="Froc.html#TYPEevent">event</a> * 'a <a href="Froc.html#TYPEevent_sender">event_sender</a></code></pre><div class="info">
-Makes a new channel for events of type <code class="code">'a</code>.<br>
+Makes a new event taking values of type <code class="code">'a</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnever"></a>never : <code class="type">'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
 An event which never occurs.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnotify_e"></a>notify_e : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> -> ('a -> unit) -> unit</code></pre><div class="info">
-Adds a listener on the channel, which is called whenever a value
-     is sent on it. When a failure is sent the listener is not
-     called. The notification is implicitly cancelled when the calling
-     context is re-run.<br>
+<code class="code">notify_e e f</code> adds <code class="code">f</code> as a listener for <code class="code">e</code>, which is called
+     with <code class="code">v</code> whenever <code class="code">e</code> occurs with value <code class="code">v</code>.  When a failure
+     occurs the listener is not called. The notification is cancelled
+     when the enclosing dynamic scope is cleaned up.
+<p>
+
+     The function <code class="code">f</code> delimits a dynamic scope governed by <code class="code">b</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnotify_e_cancel"></a>notify_e_cancel : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> -> ('a -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
 Same as <code class="code">notify_e</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).<br>
+     is still cancelled when the enclosing dynamic scope is cleaned up).<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnotify_result_e"></a>notify_result_e : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> unit</code></pre><div class="info">
 Same as <code class="code">notify_e</code> but the listener is called with a result when
      a value or a failure is sent.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnotify_result_e_cancel"></a>notify_result_e_cancel : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
-Same as <code class="code">notify_e_cancel</code>, and returns a cancel handle (the notification
-     is still implicitly cancelled).<br>
+Same as <code class="code">notify_result_e</code>, and returns a cancel handle (the
+     notification is still cancelled when the enclosing dynamic scope
+     is cleaned up).<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALsend"></a>send : <code class="type">'a <a href="Froc.html#TYPEevent_sender">event_sender</a> -> 'a -> unit</code></pre><div class="info">
-<code class="code">send e v</code> calls the listeners of the associated event with <code class="code">Value v</code>.<br>
+<code class="code">send s v</code> sends the value <code class="code">v</code> to the associated event <code class="code">e</code>, so
+     <code class="code">e</code> occurs with value <code class="code">v</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALsend_exn"></a>send_exn : <code class="type">'a <a href="Froc.html#TYPEevent_sender">event_sender</a> -> exn -> unit</code></pre><div class="info">
-<code class="code">send_exn e x</code> calls the listeners of the associated event with <code class="code">Fail x</code>.<br>
+<code class="code">send_exn s x</code> sends the failure <code class="code">x</code> to the associated event <code class="code">e</code>,
+     so <code class="code">e</code> occurs with failure <code class="code">x</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALsend_result"></a>send_result : <code class="type">'a <a href="Froc.html#TYPEevent_sender">event_sender</a> -> 'a <a href="Froc.html#TYPEresult">result</a> -> unit</code></pre><div class="info">
-<code class="code">send_result e r</code> calls the listeners of the associated event with <code class="code">r</code>.<br>
+<code class="code">send_result s r</code> sends the result <code class="code">r</code> to the associated event
+     <code class="code">e</code>, so <code class="code">e</code> occurs with result <code class="code">r</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALsend_deferred"></a>send_deferred : <code class="type">'a <a href="Froc.html#TYPEevent_sender">event_sender</a> -> 'a -> unit</code></pre><div class="info">
-<code class="code">send e v</code> calls the listeners of the associated event with <code class="code">Value v</code> in the next update cycle.<br>
+<code class="code">send_deferred s v</code> enqueues a call to <code class="code">send s v</code> for a future
+     update cycle.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALsend_exn_deferred"></a>send_exn_deferred : <code class="type">'a <a href="Froc.html#TYPEevent_sender">event_sender</a> -> exn -> unit</code></pre><div class="info">
-<code class="code">send_exn e x</code> calls the listeners of the associated event with <code class="code">Fail x</code> in the next update cycle.<br>
+<code class="code">send_exn_deferred s x</code> enqueues a call to <code class="code">send_exn s x</code> for a
+     future update cycle.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALsend_result_deferred"></a>send_result_deferred : <code class="type">'a <a href="Froc.html#TYPEevent_sender">event_sender</a> -> 'a <a href="Froc.html#TYPEresult">result</a> -> unit</code></pre><div class="info">
-<code class="code">send_result e r</code> calls the listeners of the associated event with <code class="code">r</code> in the next update cycle.<br>
+<code class="code">send_result_deferred s r</code> enqueues a call to <code class="code">send_result s r</code>
+     for a future update cycle.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALnext"></a>next : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
-<code class="code">next e</code> fires just the next occurence of <code class="code">e</code>.<br>
+<code class="code">next e</code> passes on only the next occurence of <code class="code">e</code>; subsequent
+     occurrences are dropped.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALmerge"></a>merge : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> list -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
-<code class="code">merge es</code> is an event that fires whenever any of the events in <code class="code">e</code> fire.<br>
+<code class="code">merge es</code> occurs whenever any of the events in <code class="code">es</code> occurs. If
+     more than one of the <code class="code">es</code> occurs simultaneously, the earliest one
+     in the list is passed on.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALmap"></a>map : <code class="type">('a -> 'b) -> 'a <a href="Froc.html#TYPEevent">event</a> -> 'b <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
-<code class="code">map f e</code> is an event that fires <code class="code">f v</code> whenever <code class="code">e</code> fires <code class="code">v</code>.<br>
+<code class="code">map f e</code> is an event that fires <code class="code">f v</code> whenever <code class="code">e</code> fires
+     <code class="code">v</code>. The function <code class="code">f</code> delimits a dynamic scope governed by <code class="code">e</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALfilter"></a>filter : <code class="type">('a -> bool) -> 'a <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
-<code class="code">filter p e</code> is an event that fires <code class="code">v</code> whenever <code class="code">e</code> fires <code class="code">v</code> and <code class="code">p v</code> is true.<br>
+<code class="code">filter p e</code> is an event that fires <code class="code">v</code> whenever <code class="code">e</code> fires <code class="code">v</code>
+     and <code class="code">p v</code> is true. The function <code class="code">p</code> delimits a dynamic scope
+     governed by <code class="code">e</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALcollect"></a>collect : <code class="type">('a -> 'b -> 'a) -> 'a -> 'b <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
 <code class="code">collect f b e</code> is an event that maintains an internal state <code class="code">s</code>
      (initialized to <code class="code">b</code>); whenever <code class="code">e</code> fires <code class="code">v</code>, <code class="code">s'</code> becomes <code class="code">f s
      v</code>, the event fires <code class="code">s'</code>, and <code class="code">s'</code> becomes the new internal
-     state.<br>
+     state. The function <code class="code">f</code> delimits a dynamic scope governed by <code class="code">e</code>.
+<p>
+
+     Special care must be taken when using <code class="code">collect</code> with behavior- or
+     event-valued events. The dynamic scope delimited by <code class="code">f</code> is
+     cleaned up on each occurrence of <code class="code">e</code>; any signals or created in
+     <code class="code">f</code> become detached on the next occurrence, so it is easy to wind
+     up with detached signals in <code class="code">s</code>.
+<p>
+
+     This cleanup may be controlled through the use of <code class="code">memo</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALjoin_e"></a>join_e : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
-<code class="code">join_e ee</code> fires whenever the event last fired from <code class="code">ee</code> fires<br>
+<code class="code">join_e ee</code> occurs whenever the event which last occurred on <code class="code">ee</code>
+     occurs.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALfix_e"></a>fix_e : <code class="type">('a <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEevent">event</a>) -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
+<code class="code">fix_e ef</code> returns <code class="code">ef e'</code> where <code class="code">e'</code> is an event that occurs
+     whenever <code class="code">ef e'</code> occurs, but in the next update cycle.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALhash_event"></a>hash_event : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> -> int</code></pre><div class="info">
-A hash function for events.<br>
+A hash function for events. <code class="code">Hashtbl.hash</code> is not appropriate
+     because events contain mutable data.<br>
 </div>
 <br>
-<a name="2_Combinationsofbehaviorsandevents"></a>
-<h2>Combinations of behaviors and events</h2><br>
+<a name="2_Combinations"></a>
+<h2>Combinations</h2><br>
 <pre><span class="keyword">val</span> <a name="VALswitch"></a>switch : <code class="type">?eq:('a -> 'a -> bool) -><br>       'a <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">switch b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> fires, then behaves as the last value of <code class="code">e</code>.<br>
+<code class="code">switch b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> occurs, then behaves as the
+     last value of <code class="code">e</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALuntil"></a>until : <code class="type">?eq:('a -> 'a -> bool) -><br>       'a <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">until b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> fires <code class="code">b'</code>, then behaves as <code class="code">b'</code><br>
+<code class="code">until b e</code> behaves as <code class="code">b</code> until <code class="code">e</code> occurs with value <code class="code">b'</code>, then
+     behaves as <code class="code">b'</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALhold"></a>hold : <code class="type">?eq:('a -> 'a -> bool) -> 'a -> 'a <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">hold v e</code> behaves as the last value fired by <code class="code">e</code>, or <code class="code">v</code> if <code class="code">e</code>
-     has not yet fired a value (since <code class="code">hold</code> was called). <code class="code">eq</code>
-     gives the equality on the resulting behavior.<br>
+<code class="code">hold v e</code> takes on the last value which occurred on <code class="code">e</code>, or
+     <code class="code">v</code> if <code class="code">e</code> has not yet occurred (since <code class="code">hold</code> was called).<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALhold_result"></a>hold_result : <code class="type">?eq:('a -> 'a -> bool) -> 'a <a href="Froc.html#TYPEresult">result</a> -> 'a <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
 Same as <code class="code">hold</code> but initialized with a result.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALchanges"></a>changes : <code class="type">'a <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
-<code class="code">changes b</code> fires the value of <code class="code">b</code> whenever it changes.<br>
+<code class="code">changes b</code> occurs with the value of <code class="code">b</code> whenever <code class="code">b</code> changes.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALwhen_true"></a>when_true : <code class="type">bool <a href="Froc.html#TYPEbehavior">behavior</a> -> unit <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
 <code class="code">when_true b</code> fires whenever <code class="code">b</code> becomes true.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALcount"></a>count : <code class="type">'a <a href="Froc.html#TYPEevent">event</a> -> int <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><div class="info">
-<code class="code">count e</code> behaves as the number of times <code class="code">e</code> has fired (since
+<code class="code">count e</code> takes on the number of times <code class="code">e</code> has occurred (since
      <code class="code">count</code> was called).<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALmake_cell"></a>make_cell : <code class="type">'a -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> * ('a -> unit)</code></pre><div class="info">
 <code class="code">make_cell v</code> returns a behavior (with initial value <code class="code">v</code>) and a
      setter function which changes the behavior's value. The setter
-     respects the update cycle (it enqueues an event) so may be used
+     enqueues the update for a future update cycle, so it may be used
      freely.<br>
 </div>
 <br>
-<a name="2_Variations"></a>
-<h2>Variations</h2><br>
-<pre><span class="keyword">val</span> <a name="VALbindN"></a>bindN : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> list -> ('b list -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbliftN"></a>bliftN : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> list -> ('b list -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALliftN"></a>liftN : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b list -> 'a) -> 'b <a href="Froc.html#TYPEbehavior">behavior</a> list -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind2"></a>bind2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift2"></a>blift2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -> 'c <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift2"></a>lift2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'a) -> 'b <a href="Froc.html#TYPEbehavior">behavior</a> -> 'c <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind3"></a>bind3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift3"></a>blift3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift3"></a>lift3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -> 'c <a href="Froc.html#TYPEbehavior">behavior</a> -> 'd <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind4"></a>bind4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift4"></a>blift4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'e -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift4"></a>lift4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -> 'd <a href="Froc.html#TYPEbehavior">behavior</a> -> 'e <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind5"></a>bind5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift5"></a>blift5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'e -> 'f -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift5"></a>lift5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -> 'e <a href="Froc.html#TYPEbehavior">behavior</a> -> 'f <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind6"></a>bind6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift6"></a>blift6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift6"></a>lift6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -> 'f <a href="Froc.html#TYPEbehavior">behavior</a> -> 'g <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind7"></a>bind7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'h <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -><br>       'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift7"></a>blift7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'h <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift7"></a>lift7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -> 'g <a href="Froc.html#TYPEbehavior">behavior</a> -> 'h <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><br>
+<a name="2_Other"></a>
+<h2>Other</h2><br>
+<pre><span class="keyword">val</span> <a name="VALinit"></a>init : <code class="type">unit -> unit</code></pre><div class="info">
+Initialize the library; can be called again to reinitialize.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALno_cancel"></a>no_cancel : <code class="type"><a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
+Dummy cancel.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALcancel"></a>cancel : <code class="type"><a href="Froc.html#TYPEcancel">cancel</a> -> unit</code></pre><div class="info">
+Cancels a listener registration using the given handle.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALcleanup"></a>cleanup : <code class="type">(unit -> unit) -> unit</code></pre><div class="info">
+<code class="code">cleanup f</code> attaches <code class="code">f</code> to the enclosing dynamic scope, so it is
+     called when the scope is cleaned up. This is useful for cleaning
+     up external resources, such as GUI event handlers.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALmemo"></a>memo : <code class="type">?size:int -><br>       ?hash:('a -> int) -> ?eq:('a -> 'a -> bool) -> unit -> ('a -> 'b) -> 'a -> 'b</code></pre><div class="info">
+<code class="code">memo f</code> creates a memo function <code class="code">f'</code> from <code class="code">f</code>. When <code class="code">f' x</code> is
+     called from within an update function, there may be either a hit
+     or a miss. A hit happens when some <code class="code">f' x'</code> was called in the
+     previous run of the update function, when <code class="code">eq x x'</code>, and no later
+     call has already hit (that is, hits must happen in the same order
+     as the calls happened in the previous run). On a miss, <code class="code">f' x</code>
+     calls <code class="code">f x</code> in a new dynamic scope, and stores its value for
+     possible reuse. On a hit, <code class="code">f' x</code> returns the value of the
+     previous call, and any updates necessary to make the value
+     consistent are executed; the dynamic scope of the previous call
+     is <em>not</em> cleaned up (so that the value remains attached to its
+     dependencies).
+<p>
+
+     The main point of <code class="code">memo</code> is to avoid needless recomputation in
+     cases where a computation is governed by some signal but does not
+     actually use the signal's value. For example, in <pre><code class="code">       let g = memo () fun x -&gt; ... in
+       b &gt;&gt;= fun _ -&gt; g 7
+     </code></pre> the returned behavior is indifferent to the value of
+     <code class="code">b</code>. Without <code class="code">memo</code> it would be recomputed every time <code class="code">b</code>
+     changes; with <code class="code">memo</code> it is computed only the first time.
+<p>
+
+     Because the dynamic scope of the previous call is not cleaned up
+     on a memo hit, <code class="code">memo</code> can be used purely to protect signals and
+     listeners from being detached when their governing signals
+     change. See the <code class="code">quickhull</code> example for an instance of this use.
+<p>
+
+     The unit argument makes it possible to memoize a recursive
+     function, using the following idiom: <pre><code class="code">       let m = memo () in (* creates the memo table *)
+       let rec f x = ... m f y in
+       let f x = m f x
+     </code></pre>
+<p>
+
+     The default hash function is not appropriate for behaviors and
+     events (since they contain mutable data); <code class="code">hash_behavior</code> and
+     <code class="code">hash_event</code> should be used instead.<br>
+</div>
+<br>
 <a name="2_Debugging"></a>
 <h2>Debugging</h2><br>
 <pre><span class="keyword">val</span> <a name="VALset_exn_handler"></a>set_exn_handler : <code class="type">(exn -> unit) -> unit</code></pre><div class="info">
 Set an exception handler which is called on exceptions from
-     notification functions.<br>
+     listeners.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALset_debug"></a>set_debug : <code class="type">(string -> unit) -> unit</code></pre><div class="info">
 Set a function for showing library debugging.<br>
 </div>
-</body></html>
+<br>
+<a name="2_Variations"></a>
+<h2>Variations</h2><br>
+<pre><span class="keyword">val</span> <a name="VALbind2"></a>bind2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift2"></a>blift2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -> 'c <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift2"></a>lift2 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'a) -> 'b <a href="Froc.html#TYPEbehavior">behavior</a> -> 'c <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind3"></a>bind3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift3"></a>blift3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift3"></a>lift3 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -> 'c <a href="Froc.html#TYPEbehavior">behavior</a> -> 'd <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind4"></a>bind4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift4"></a>blift4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'e -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift4"></a>lift4 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -> 'd <a href="Froc.html#TYPEbehavior">behavior</a> -> 'e <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind5"></a>bind5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift5"></a>blift5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -> ('b -> 'c -> 'd -> 'e -> 'f -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift5"></a>lift5 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -> 'e <a href="Froc.html#TYPEbehavior">behavior</a> -> 'f <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind6"></a>bind6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift6"></a>blift6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift6"></a>lift6 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -> 'f <a href="Froc.html#TYPEbehavior">behavior</a> -> 'g <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbind7"></a>bind7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'h <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -><br>       'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALblift7"></a>blift7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'g <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'h <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALlift7"></a>lift7 : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'a) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'c <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'd <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'e <a href="Froc.html#TYPEbehavior">behavior</a> -><br>       'f <a href="Froc.html#TYPEbehavior">behavior</a> -> 'g <a href="Froc.html#TYPEbehavior">behavior</a> -> 'h <a href="Froc.html#TYPEbehavior">behavior</a> -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbindN"></a>bindN : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> list -> ('b list -> 'a <a href="Froc.html#TYPEbehavior">behavior</a>) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALbliftN"></a>bliftN : <code class="type">?eq:('a -> 'a -> bool) -><br>       'b <a href="Froc.html#TYPEbehavior">behavior</a> list -> ('b list -> 'a) -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre><pre><span class="keyword">val</span> <a name="VALliftN"></a>liftN : <code class="type">?eq:('a -> 'a -> bool) -><br>       ('b list -> 'a) -> 'b <a href="Froc.html#TYPEbehavior">behavior</a> list -> 'a <a href="Froc.html#TYPEbehavior">behavior</a></code></pre></body></html>

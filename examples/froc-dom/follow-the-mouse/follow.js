@@ -2135,6 +2135,21 @@ var oc$Hashtbl$ =
     return $(create$79, clear$82, add$102, copy$85, find$121, find_all$133, mem$150, remove$108, replace$140, iter$157, fold$166,
              length$87, Make$279, hash$59);
   }();
+var oc$Int64$ =
+  function () {
+    var zero$78 = "0";
+    var one$79 = "1";
+    var minus_one$80 = "-1";
+    var succ$81 = _f(function (n$82) { return n$82 + "1"; });
+    var pred$83 = _f(function (n$84) { return n$84 - "1"; });
+    var abs$85 = _f(function (n$86) { if (n$86 >= "0") return n$86; return -n$86; });
+    var min_int$87 = "-9223372036854775808";
+    var max_int$88 = "9223372036854775807";
+    var lognot$89 = _f(function (n$90) { return n$90 ^ "-1"; });
+    var to_string$92 = _f(function (n$93) { return caml_format_int("%d", n$93); });
+    var compare$98 = _f(function (x$99, y$100) { return caml_int64_compare(x$99, y$100); });
+    return $(zero$78, one$79, minus_one$80, succ$81, pred$83, abs$85, max_int$88, min_int$87, lognot$89, to_string$92, compare$98);
+  }();
 var oc$Stack$ =
   function () {
     var Empty$62 = $("Stack.Empty");
@@ -2248,6 +2263,37 @@ var oc$Queue$ =
          });
     return $(Empty$58, create$75, add$78, add$78, take$89, take$89, peek$86, peek$86, clear$76, copy$94, is_empty$100, length$102,
              iter$104, fold$110, transfer$119);
+  }();
+var oc$Random$ =
+  function () {
+    var init$74 = _f(function (prim$124) { return 0; });
+    var full_init$75 = _f(function (prim$123) { return 0; });
+    var self_init$76 = _f(function (prim$122) { return 0; });
+    var bits$77 = _f(function (param$121) { return Math.floor(Math.random() * 1073741824); });
+    var int$78 = _f(function (b$79) { return Math.floor(Math.random() * b$79); });
+    var int32$80 = _f(function (b$81) { return Math.floor(Math.random() * b$81); });
+    var nativeint$82 = _f(function (b$83) { return Math.floor(Math.random() * b$83); });
+    var int64$84 = _f(function (param$120) { return oc$Int64$[0]; });
+    var float$85 = _f(function (b$86) { return Math.random() * b$86; });
+    var bool$87 = _f(function (param$119) { return Math.random() < 0.5; });
+    var State$104 =
+      function () {
+        var make$89 = _f(function (prim$118) { return 0; });
+        var make_self_init$90 = _f(function (prim$117) { return 0; });
+        var copy$91 = _f(function (prim$116) { return 0; });
+        var bits$92 = _f(function (param$115) { return __(bits$77, [ 0 ]); });
+        var int$93 = _f(function (param$114, b$94) { return __(int$78, [ b$94 ]); });
+        var int32$95 = _f(function (param$113, b$96) { return __(int32$80, [ b$96 ]); });
+        var nativeint$97 = _f(function (param$112, b$98) { return __(nativeint$82, [ b$98 ]); });
+        var int64$99 = _f(function (param$111, b$100) { return __(int64$84, [ b$100 ]); });
+        var float$101 = _f(function (param$110, b$102) { return __(float$85, [ b$102 ]); });
+        var bool$103 = _f(function (param$109) { return __(bool$87, [ 0 ]); });
+        return $(make$89, make_self_init$90, copy$91, bits$92, int$93, int32$95, nativeint$97, int64$99, float$101, bool$103);
+      }();
+    var get_state$105 = _f(function (prim$108) { return 0; });
+    var set_state$106 = _f(function (prim$107) { return 0; });
+    return $(init$74, full_init$75, self_init$76, bits$77, int$78, int32$80, nativeint$82, int64$84, float$85, bool$87, State$104,
+             get_state$105, set_state$106);
   }();
 var oc$Froc_dlist$ =
   function () {
@@ -4541,29 +4587,36 @@ var oc$Froc_ddg$ =
   }();
 var oc$Froc$ =
   function () {
-    var include$287 = oc$Froc_ddg$;
-    var Unset$60 = include$287[0];
-    var no_cancel$63 = include$287[2];
-    var cancel$64 = include$287[3];
-    var is_constant$69 = include$287[7];
-    var bind$70 = include$287[8];
-    var read_result$81 = include$287[19];
-    var write_result$84 = include$287[22];
-    var notify$86 = include$287[24];
-    var notify_cancel$87 = include$287[25];
-    var notify_result$88 = include$287[26];
-    var notify_result_cancel$89 = include$287[27];
-    var connect$90 = include$287[28];
-    var make_changeable$93 = include$287[31];
-    var make_constant$94 = include$287[32];
-    var hash$95 = include$287[33];
-    var debug$131 = $(_f(function (prim$316) { return 0; }));
-    var set_debug$132 = _f(function (f$133) { debug$131[0] = f$133; return __(include$287[37], [ f$133 ]); });
+    var include$302 = oc$Froc_ddg$;
+    var Unset$60 = include$302[0];
+    var no_cancel$63 = include$302[2];
+    var cancel$64 = include$302[3];
+    var is_constant$69 = include$302[7];
+    var bind$70 = include$302[8];
+    var read_result$81 = include$302[19];
+    var write_result$84 = include$302[22];
+    var notify$86 = include$302[24];
+    var notify_cancel$87 = include$302[25];
+    var notify_result$88 = include$302[26];
+    var notify_result_cancel$89 = include$302[27];
+    var connect$90 = include$302[28];
+    var make_changeable$93 = include$302[31];
+    var make_constant$94 = include$302[32];
+    var hash$95 = include$302[33];
+    var debug$131 = $(_f(function (prim$335) { return 0; }));
+    var set_debug$132 = _f(function (f$133) { debug$131[0] = f$133; return __(include$302[37], [ f$133 ]); });
     var q$136 = _(oc$Queue$[1], [ 0 ]);
-    var init$137 = _f(function (param$315) { _(include$287[34], [ 0 ]); return __(oc$Queue$[8], [ q$136 ]); });
+    var temps$137 = $(0);
     var running$138 = $(0);
-    var run_queue$139 =
-      _f(function (param$314) {
+    var init$139 =
+      _f(function (param$334) {
+           _(include$302[34], [ 0 ]);
+           _(oc$Queue$[8], [ q$136 ]);
+           temps$137[0] = 0;
+           return running$138[0] = 0;
+         });
+    var run_queue$140 =
+      _f(function (param$333) {
            if (!running$138[0]) {
              {
                running$138[0] = 1;
@@ -4571,266 +4624,300 @@ var oc$Froc$ =
                  while (!_(oc$Queue$[10], [ q$136 ])) _(oc$Queue$[4], [ q$136, 0 ]);
                  return running$138[0] = 0;
                }
-               catch (e$140) {
+               catch (e$141) {
                  running$138[0] = 0;
-                 throw e$140;
+                 throw e$141;
                }
              }
            }
            return 0;
          });
-    var temps$141 = $(0);
-    var write_temp_result$142 =
-      _f(function (u$143, r$144) {
-           temps$141[0] = $(_f(function (param$313) { return __(include$287[23], [ u$143 ]); }), temps$141[0]);
-           return __(write_result$84, [ u$143, r$144 ]);
+    var with_run_queue$142 =
+      _f(function (f$143) {
+           var running$27$144 = running$138[0];
+           running$138[0] = 1;
+           _(f$143, [ 0 ]);
+           running$138[0] = running$27$144;
+           return __(run_queue$140, [ 0 ]);
          });
-    var send_result$145 =
-      _f(function (s$146, r$147) {
-           var match$312 = temps$141[0];
-           if (match$312) return __(oc$Pervasives$[1], [ "already in update loop" ]);
-           _(write_temp_result$142, [ s$146, r$147 ]);
-           _(include$287[35], [ 0 ]);
-           _(oc$List$[9], [ _f(function (f$148) { return __(f$148, [ 0 ]); }), temps$141[0] ]);
-           temps$141[0] = 0;
-           return __(run_queue$139, [ 0 ]);
+    var write_temp_result$145 =
+      _f(function (u$146, r$147) {
+           temps$137[0] = $(_f(function (param$332) { return __(include$302[23], [ u$146 ]); }), temps$137[0]);
+           return __(write_result$84, [ u$146, r$147 ]);
          });
-    var send$149 = _f(function (s$150, v$151) { return __(send_result$145, [ s$150, $(v$151) ]); });
-    var send_exn$152 = _f(function (s$153, e$154) { return __(send_result$145, [ s$153, $1(e$154) ]); });
-    var send_result_deferred$155 =
-      _f(function (u$156, r$157) {
-           _(oc$Queue$[2], [ _f(function (param$311) { return __(send_result$145, [ u$156, r$157 ]); }), q$136 ]);
-           return __(run_queue$139, [ 0 ]);
+    var send_result$148 =
+      _f(function (s$149, r$150) {
+           var match$331 = temps$137[0];
+           if (match$331) return __(oc$Pervasives$[1], [ "already in update loop" ]);
+           return __(with_run_queue$142,
+                     [
+                       _f(function (param$330) {
+                            _(write_temp_result$145, [ s$149, r$150 ]);
+                            _(include$302[35], [ 0 ]);
+                            _(oc$List$[9], [ _f(function (f$151) { return __(f$151, [ 0 ]); }), temps$137[0] ]);
+                            return temps$137[0] = 0;
+                          })
+                     ]);
          });
-    var send_deferred$158 = _f(function (u$159, v$160) { return __(send_result_deferred$155, [ u$159, $(v$160) ]); });
-    var send_exn_deferred$161 = _f(function (u$162, e$163) { return __(send_result_deferred$155, [ u$162, $1(e$163) ]); });
-    var never_eq$164 = _f(function (param$309, param$310) { return 0; });
-    var make_event$165 = _f(function (param$308) { return __(make_changeable$93, [ $(never_eq$164), 0, 0 ]); });
-    var never$166 = _(make_constant$94, [ $1($(Unset$60)) ]);
-    var notify_result_e_cancel$168 = _f(function (t$169, f$170) { return __(notify_result_cancel$89, [ $(0), t$169, f$170 ]); });
-    var notify_result_e$171 = _f(function (t$172, f$173) { return __(notify_result$88, [ $(0), t$172, f$173 ]); });
-    var notify_e_cancel$174 = _f(function (t$175, f$176) { return __(notify_cancel$87, [ $(0), t$175, f$176 ]); });
-    var notify_e$177 = _f(function (t$178, f$179) { return __(notify$86, [ $(0), t$178, f$179 ]); });
-    var next$181 =
-      _f(function (t$182) {
-           if (_(is_constant$69, [ t$182 ])) return never$166;
-           var match$307 = _(make_event$165, [ 0 ]);
-           var c$185 = $(no_cancel$63);
-           c$185[0] =
-             _(notify_result_e_cancel$168,
+    var send$152 = _f(function (s$153, v$154) { return __(send_result$148, [ s$153, $(v$154) ]); });
+    var send_exn$155 = _f(function (s$156, e$157) { return __(send_result$148, [ s$156, $1(e$157) ]); });
+    var send_result_deferred$158 =
+      _f(function (u$159, r$160) {
+           _(oc$Queue$[2], [ _f(function (param$329) { return __(send_result$148, [ u$159, r$160 ]); }), q$136 ]);
+           return __(run_queue$140, [ 0 ]);
+         });
+    var send_deferred$161 = _f(function (u$162, v$163) { return __(send_result_deferred$158, [ u$162, $(v$163) ]); });
+    var send_exn_deferred$164 = _f(function (u$165, e$166) { return __(send_result_deferred$158, [ u$165, $1(e$166) ]); });
+    var never_eq$167 = _f(function (param$327, param$328) { return 0; });
+    var make_event$168 = _f(function (param$326) { return __(make_changeable$93, [ $(never_eq$167), 0, 0 ]); });
+    var never$169 = _(make_constant$94, [ $1($(Unset$60)) ]);
+    var notify_result_e_cancel$171 = _f(function (t$172, f$173) { return __(notify_result_cancel$89, [ $(0), t$172, f$173 ]); });
+    var notify_result_e$174 = _f(function (t$175, f$176) { return __(notify_result$88, [ $(0), t$175, f$176 ]); });
+    var notify_e_cancel$177 = _f(function (t$178, f$179) { return __(notify_cancel$87, [ $(0), t$178, f$179 ]); });
+    var notify_e$180 = _f(function (t$181, f$182) { return __(notify$86, [ $(0), t$181, f$182 ]); });
+    var next$184 =
+      _f(function (t$185) {
+           if (_(is_constant$69, [ t$185 ])) return never$169;
+           var match$325 = _(make_event$168, [ 0 ]);
+           var c$188 = $(no_cancel$63);
+           c$188[0] =
+             _(notify_result_e_cancel$171,
                [
-                 t$182,
-                 _f(function (r$186) {
-                      _(cancel$64, [ c$185[0] ]);
-                      c$185[0] = no_cancel$63;
-                      return __(write_temp_result$142, [ match$307[1], r$186 ]);
+                 t$185,
+                 _f(function (r$189) {
+                      _(cancel$64, [ c$188[0] ]);
+                      c$188[0] = no_cancel$63;
+                      return __(write_temp_result$145, [ match$325[1], r$189 ]);
                     })
                ]);
-           return match$307[0];
+           return match$325[0];
          });
-    var merge$187 =
-      _f(function (ts$188) {
-           if (_(oc$List$[19], [ is_constant$69, ts$188 ])) return never$166;
-           var match$306 = _(make_event$165, [ 0 ]);
-           var notify$191 = $(0);
-           _(include$287[66],
+    var merge$190 =
+      _f(function (ts$191) {
+           if (_(oc$List$[19], [ is_constant$69, ts$191 ])) return never$169;
+           var match$324 = _(make_event$168, [ 0 ]);
+           var notify$194 = $(0);
+           _(include$302[66],
              [
-               ts$188,
-               _f(function (param$303) {
-                    if (!notify$191[0]) return notify$191[0] = 1;
-                    var loop$192 =
-                      _f(function (param$304) {
-                           if (param$304) {
+               ts$191,
+               _f(function (param$321) {
+                    if (!notify$194[0]) return notify$194[0] = 1;
+                    var loop$195 =
+                      _f(function (param$322) {
+                           if (param$322) {
                              {
-                               var r$195 = _(read_result$81, [ param$304[0] ]);
-                               switch ($t(r$195))
+                               var r$198 = _(read_result$81, [ param$322[0] ]);
+                               switch ($t(r$198))
                                {
-                               case 1: if (r$195[0][0] === Unset$60) return __(loop$192, [ param$304[1] ]); return r$195;
-                               default: return r$195;
+                               case 1: if (r$198[0][0] === Unset$60) return __(loop$195, [ param$322[1] ]); return r$198;
+                               default: return r$198;
                                }
                              }
                            }
-                           throw $(Assert_failure$26g, $("froc.ml", 115, 18));
+                           throw $(Assert_failure$26g, $("froc.ml", 124, 18));
                          });
-                    return __(write_temp_result$142, [ match$306[1], _(loop$192, [ ts$188 ]) ]);
+                    return __(write_temp_result$145, [ match$324[1], _(loop$195, [ ts$191 ]) ]);
                   })
              ]);
-           return match$306[0];
+           return match$324[0];
          });
-    var map$196 =
-      _f(function (f$197, t$198) {
-           if (_(is_constant$69, [ t$198 ])) return never$166;
-           var match$302 = _(make_event$165, [ 0 ]);
-           _(notify_result_e$171,
+    var map$199 =
+      _f(function (f$200, t$201) {
+           if (_(is_constant$69, [ t$201 ])) return never$169;
+           var match$320 = _(make_event$168, [ 0 ]);
+           _(notify_result_e$174,
              [
-               t$198,
-               _f(function (r$201) {
-                    var r$202 =
+               t$201,
+               _f(function (r$204) {
+                    var r$205 =
                       function () {
-                        switch ($t(r$201))
+                        switch ($t(r$204))
                         {
-                        case 0: try { return $(_(f$197, [ r$201[0] ])); } catch (e$205) { return $1(e$205); } break;
-                        case 1: return $1(r$201[0]);
+                        case 0: try { return $(_(f$200, [ r$204[0] ])); } catch (e$208) { return $1(e$208); } break;
+                        case 1: return $1(r$204[0]);
                         default: return null;
                         }
                       }();
-                    return __(write_temp_result$142, [ match$302[1], r$202 ]);
+                    return __(write_temp_result$145, [ match$320[1], r$205 ]);
                   })
              ]);
-           return match$302[0];
+           return match$320[0];
          });
-    var filter$206 =
-      _f(function (p$207, t$208) {
-           if (_(is_constant$69, [ t$208 ])) return never$166;
-           var match$301 = _(make_event$165, [ 0 ]);
-           _(notify_result_e$171,
+    var filter$209 =
+      _f(function (p$210, t$211) {
+           if (_(is_constant$69, [ t$211 ])) return never$169;
+           var match$319 = _(make_event$168, [ 0 ]);
+           _(notify_result_e$174,
              [
-               t$208,
-               _f(function (r$211) {
-                    var r$212 =
+               t$211,
+               _f(function (r$214) {
+                    var r$215 =
                       function () {
-                        switch ($t(r$211))
+                        switch ($t(r$214))
                         {
                         case 0:
-                          var v$213 = r$211[0];
-                          try { if (_(p$207, [ v$213 ])) return $($(v$213)); return 0; } catch (e$214) { return $($1(e$214)); }
+                          var v$216 = r$214[0];
+                          try { if (_(p$210, [ v$216 ])) return $($(v$216)); return 0; } catch (e$217) { return $($1(e$217)); }
                           break;
-                        case 1: return $(r$211);
+                        case 1: return $(r$214);
                         default: return null;
                         }
                       }();
-                    if (r$212) return __(write_temp_result$142, [ match$301[1], r$212[0] ]);
+                    if (r$215) return __(write_temp_result$145, [ match$319[1], r$215[0] ]);
                     return 0;
                   })
              ]);
-           return match$301[0];
+           return match$319[0];
          });
-    var collect$216 =
-      _f(function (f$217, init$218, t$219) {
-           if (_(is_constant$69, [ t$219 ])) return never$166;
-           var match$299 = _(make_event$165, [ 0 ]);
-           var st$222 = $($(init$218));
-           _(notify_result_e$171,
+    var collect$219 =
+      _f(function (f$220, init$221, t$222) {
+           if (_(is_constant$69, [ t$222 ])) return never$169;
+           var match$317 = _(make_event$168, [ 0 ]);
+           var st$225 = $($(init$221));
+           _(notify_result_e$174,
              [
-               t$219,
-               _f(function (r$223) {
-                    var r$224 =
+               t$222,
+               _f(function (r$226) {
+                    var r$227 =
                       function () {
-                        var match$296 = st$222[0];
-                        switch ($t(match$296))
+                        var match$314 = st$225[0];
+                        switch ($t(match$314))
                         {
                         case 0:
-                          switch ($t(r$223))
+                          switch ($t(r$226))
                           {
                           case 0:
-                            try { return $($(_(f$217, [ match$296[0], r$223[0] ]))); } catch (e$228) { return $($1(e$228)); }
+                            try { return $($(_(f$220, [ match$314[0], r$226[0] ]))); } catch (e$231) { return $($1(e$231)); }
                             break;
-                          default: return $($1(r$223[0]));
+                          default: return $($1(r$226[0]));
                           }
                           break;
                         case 1: return 0;
                         default: return null;
                         }
                       }();
-                    if (r$224) {
-                      { var r$229 = r$224[0]; st$222[0] = r$229; return __(write_temp_result$142, [ match$299[1], r$229 ]); }
+                    if (r$227) {
+                      { var r$232 = r$227[0]; st$225[0] = r$232; return __(write_temp_result$145, [ match$317[1], r$232 ]); }
                     }
                     return 0;
                   })
              ]);
-           return match$299[0];
+           return match$317[0];
          });
-    var join_e$230 =
-      _f(function (ee$231) {
-           if (_(is_constant$69, [ ee$231 ])) return never$166;
-           var match$295 = _(make_event$165, [ 0 ]);
-           var ru$233 = match$295[1];
-           _(notify_result_e$171,
+    var join_e$233 =
+      _f(function (ee$234) {
+           if (_(is_constant$69, [ ee$234 ])) return never$169;
+           var match$313 = _(make_event$168, [ 0 ]);
+           var ru$236 = match$313[1];
+           _(notify_result_e$174,
              [
-               ee$231,
-               _f(function (param$294) {
-                    switch ($t(param$294))
+               ee$234,
+               _f(function (param$312) {
+                    switch ($t(param$312))
                     {
-                    case 0: return __(notify_result_e$171, [ param$294[0], _(write_temp_result$142, [ ru$233 ]) ]);
-                    case 1: return __(write_temp_result$142, [ ru$233, $1(param$294[0]) ]);
+                    case 0: return __(notify_result_e$174, [ param$312[0], _(write_temp_result$145, [ ru$236 ]) ]);
+                    case 1: return __(write_temp_result$145, [ ru$236, $1(param$312[0]) ]);
                     default: return null;
                     }
                   })
              ]);
-           return match$295[0];
+           return match$313[0];
          });
-    var join_b$244 =
-      _f(function (eq$245, bb$246) { return __(bind$70, [ eq$245, bb$246, _f(function (b$247) { return b$247; }) ]); });
-    var switch$248 =
-      _f(function (eq$249, b$250, e$251) {
-           if (_(is_constant$69, [ e$251 ])) return b$250;
-           var match$293 = _(make_changeable$93, [ eq$249, 0, 0 ]);
-           var bu$253 = match$293[1];
+    var fix_e$239 =
+      _f(function (ef$240) {
+           var match$311 = _(make_event$168, [ 0 ]);
+           var e$243 = _(ef$240, [ match$311[0] ]);
+           _(notify_result_e$174, [ e$243, _(send_result_deferred$158, [ match$311[1] ]) ]);
+           return e$243;
+         });
+    var join_b$252 =
+      _f(function (eq$253, bb$254) { return __(bind$70, [ eq$253, bb$254, _f(function (b$255) { return b$255; }) ]); });
+    var fix_b$256 =
+      _f(function (eq$257, bf$258) {
+           var match$310 = _(make_changeable$93, [ eq$257, 0, 0 ]);
+           var b$261 = _(bf$258, [ match$310[0] ]);
            _(notify_result$88,
              [
                0,
-               e$251,
-               _f(function (param$292) {
-                    switch ($t(param$292))
+               b$261,
+               _f(function (r$262) {
+                    _(oc$Queue$[2], [ _f(function (param$309) { return __(write_result$84, [ match$310[1], r$262 ]); }), q$136 ]);
+                    return __(run_queue$140, [ 0 ]);
+                  })
+             ]);
+           return b$261;
+         });
+    var switch$263 =
+      _f(function (eq$264, b$265, e$266) {
+           if (_(is_constant$69, [ e$266 ])) return b$265;
+           var match$308 = _(make_changeable$93, [ eq$264, 0, 0 ]);
+           var bu$268 = match$308[1];
+           _(notify_result$88,
+             [
+               0,
+               e$266,
+               _f(function (param$307) {
+                    switch ($t(param$307))
                     {
-                    case 0: return __(connect$90, [ bu$253, param$292[0] ]);
+                    case 0: return __(connect$90, [ bu$268, param$307[0] ]);
                     case 1:
-                      var e$255 = param$292[0];
-                      if (e$255[0] === Unset$60) return __(connect$90, [ bu$253, b$250 ]);
-                      return __(include$287[21], [ bu$253, e$255 ]);
+                      var e$270 = param$307[0];
+                      if (e$270[0] === Unset$60) return __(connect$90, [ bu$268, b$265 ]);
+                      return __(include$302[21], [ bu$268, e$270 ]);
                     default: return null;
                     }
                   })
              ]);
-           return match$293[0];
+           return match$308[0];
          });
-    var until$256 = _f(function (eq$257, b$258, e$259) { return __(switch$248, [ eq$257, b$258, _(next$181, [ e$259 ]) ]); });
-    var hold_result$260 =
-      _f(function (eq$261, init$262, e$263) {
-           if (_(is_constant$69, [ e$263 ])) return __(make_constant$94, [ init$262 ]);
-           var match$291 = _(make_changeable$93, [ eq$261, $(init$262), 0 ]);
-           _(notify_result_e$171, [ e$263, _(write_result$84, [ match$291[1] ]) ]);
-           return match$291[0];
+    var until$271 = _f(function (eq$272, b$273, e$274) { return __(switch$263, [ eq$272, b$273, _(next$184, [ e$274 ]) ]); });
+    var hold_result$275 =
+      _f(function (eq$276, init$277, e$278) {
+           if (_(is_constant$69, [ e$278 ])) return __(make_constant$94, [ init$277 ]);
+           var match$306 = _(make_changeable$93, [ eq$276, $(init$277), 0 ]);
+           _(notify_result_e$174, [ e$278, _(write_result$84, [ match$306[1] ]) ]);
+           return match$306[0];
          });
-    var hold$266 = _f(function (eq$267, init$268, e$269) { return __(hold_result$260, [ eq$267, $(init$268), e$269 ]); });
-    var changes$270 =
-      _f(function (b$271) {
-           if (_(is_constant$69, [ b$271 ])) return never$166;
-           var match$290 = _(make_event$165, [ 0 ]);
-           _(notify_result$88, [ $(0), b$271, _(write_temp_result$142, [ match$290[1] ]) ]);
-           return match$290[0];
+    var hold$281 = _f(function (eq$282, init$283, e$284) { return __(hold_result$275, [ eq$282, $(init$283), e$284 ]); });
+    var changes$285 =
+      _f(function (b$286) {
+           if (_(is_constant$69, [ b$286 ])) return never$169;
+           var match$305 = _(make_event$168, [ 0 ]);
+           _(notify_result$88, [ $(0), b$286, _(write_temp_result$145, [ match$305[1] ]) ]);
+           return match$305[0];
          });
-    var when_true$274 =
-      _f(function (b$275) {
-           return __(map$196,
+    var when_true$289 =
+      _f(function (b$290) {
+           return __(map$199,
                      [
-                       _f(function (b$276) { return 0; }),
-                       _(filter$206, [ _f(function (b$277) { return b$277; }), _(changes$270, [ b$275 ]) ])
+                       _f(function (b$291) { return 0; }),
+                       _(filter$209, [ _f(function (b$292) { return b$292; }), _(changes$285, [ b$290 ]) ])
                      ]);
          });
-    var count$278 =
-      _f(function (t$279) {
-           return __(hold$266, [ 0, 0, _(collect$216, [ _f(function (n$280, param$289) { return n$280 + 1; }), 0, t$279 ]) ]);
+    var count$293 =
+      _f(function (t$294) {
+           return __(hold$281, [ 0, 0, _(collect$219, [ _f(function (n$295, param$304) { return n$295 + 1; }), 0, t$294 ]) ]);
          });
-    var make_cell$281 =
-      _f(function (v$282) {
-           var match$288 = _(make_event$165, [ 0 ]);
-           return $(_(hold$266, [ 0, v$282, match$288[0] ]), _(send_deferred$158, [ match$288[1] ]));
+    var make_cell$296 =
+      _f(function (v$297) {
+           var match$303 = _(make_event$168, [ 0 ]);
+           return $(_(hold$281, [ 0, v$297, match$303[0] ]), _(send_deferred$161, [ match$303[1] ]));
          });
-    return $(init$137, no_cancel$63, cancel$64, include$287[5], include$287[6], bind$70, 
-             include$287[9], include$287[11], include$287[10], include$287[18], read_result$81, 
-             include$287[14], include$287[16], include$287[15], include$287[17], join_b$244, notify$86, notify_cancel$87,
-             notify_result$88, notify_result_cancel$89, include$287[30], 
-             include$287[38], hash$95, make_event$165, never$166, notify_e$177, notify_e_cancel$174, notify_result_e$171,
-             notify_result_e_cancel$168, send$149, send_exn$152, send_result$145, send_deferred$158, send_exn_deferred$161,
-             send_result_deferred$155, next$181, merge$187, map$196, filter$206, collect$216, join_e$230, hash$95, switch$248,
-             until$256, hold$266, hold_result$260, changes$270, when_true$274, count$278, make_cell$281, 
-             include$287[63], include$287[65], include$287[64], include$287[39], 
-             include$287[41], include$287[40], include$287[43], include$287[45], 
-             include$287[44], include$287[47], include$287[49], include$287[48], 
-             include$287[51], include$287[53], include$287[52], include$287[55], 
-             include$287[57], include$287[56], include$287[59], include$287[61], 
-             include$287[60], include$287[36], set_debug$132);
+    return $(include$302[5], include$302[6], bind$70, include$302[9], 
+             include$302[11], include$302[10], include$302[18], read_result$81, 
+             include$302[14], include$302[16], include$302[15], include$302[17], join_b$252, fix_b$256, notify$86,
+             notify_cancel$87, notify_result$88, notify_result_cancel$89, hash$95, make_event$168, never$169, notify_e$180,
+             notify_e_cancel$177, notify_result_e$174, notify_result_e_cancel$171, send$152, send_exn$155, send_result$148,
+             send_deferred$161, send_exn_deferred$164, send_result_deferred$158, next$184, merge$190, map$199, filter$209,
+             collect$219, join_e$233, fix_e$239, hash$95, switch$263, until$271, hold$281, hold_result$275, changes$285,
+             when_true$289, count$293, make_cell$296, init$139, no_cancel$63, cancel$64, 
+             include$302[30], include$302[38], include$302[36], set_debug$132, 
+             include$302[39], include$302[41], include$302[40], include$302[43], 
+             include$302[45], include$302[44], include$302[47], include$302[49], 
+             include$302[48], include$302[51], include$302[53], include$302[52], 
+             include$302[55], include$302[57], include$302[56], include$302[59], 
+             include$302[61], include$302[60], include$302[63], include$302[65], 
+             include$302[64]);
   }();
 var oc$Ocamljs$ =
   function () {
@@ -4856,7 +4943,7 @@ var oc$Froc_dom$ =
     var $7C$3E$58 = _f(function (x$59, f$60) { return __(f$60, [ x$59 ]); });
     var ticks_b$63 =
       _f(function (msb$64) {
-           var match$201 = _(oc$Froc$[23], [ 0 ]);
+           var match$201 = _(oc$Froc$[19], [ 0 ]);
            var id$67 = $(0);
            var clear$68 =
              _f(function (param$199) {
@@ -4879,26 +4966,26 @@ var oc$Froc_dom$ =
                              $(function () {
                                  var v$209 = oc$Dom$[0];
                                  return _m(v$209.setInterval, v$209,
-                                           [ _f(function (param$197) { return __(oc$Froc$[29], [ match$201[1], 0 ]); }), r$71[0] ]);
+                                           [ _f(function (param$197) { return __(oc$Froc$[25], [ match$201[1], 0 ]); }), r$71[0] ]);
                                }());
                   case 1: return 0;
                   default: return null;
                   }
                 });
-           _(oc$Froc$[20], [ clear$68 ]);
-           _(oc$Froc$[18], [ 0, msb$64, set_interval$70 ]);
+           _(oc$Froc$[50], [ clear$68 ]);
+           _(oc$Froc$[16], [ 0, msb$64, set_interval$70 ]);
            return match$201[0];
          });
     var ticks$73 =
       _f(function (ms$74) {
-           var match$196 = _(oc$Froc$[23], [ 0 ]);
+           var match$196 = _(oc$Froc$[19], [ 0 ]);
            var id$77 =
              function () {
                var v$208 = oc$Dom$[0];
                return _m(v$208.setInterval, v$208,
-                         [ _f(function (param$195) { return __(oc$Froc$[29], [ match$196[1], 0 ]); }), ms$74 ]);
+                         [ _f(function (param$195) { return __(oc$Froc$[25], [ match$196[1], 0 ]); }), ms$74 ]);
              }();
-           _(oc$Froc$[20],
+           _(oc$Froc$[50],
              [
                _f(function (param$194) {
                     return function () { var v$207 = oc$Dom$[0]; return __m(v$207.clearInterval, v$207, [ id$77 ]); }();
@@ -4912,7 +4999,7 @@ var oc$Froc_dom$ =
              _f(function (de$91) {
                   if (!(de$91[1] === de$91)) {
                     {
-                      _(oc$Froc$[34], [ e$88, de$91[0] ]);
+                      _(oc$Froc$[30], [ e$88, de$91[0] ]);
                       var de_next$92 = de$91[1];
                       de$91[1] = de$91;
                       return __(send$90, [ de_next$92 ]);
@@ -4924,16 +5011,16 @@ var oc$Froc_dom$ =
          });
     var delay_eb$93 =
       _f(function (t$94, msb$95) {
-           var match$193 = _(oc$Froc$[23], [ 0 ]);
+           var match$193 = _(oc$Froc$[19], [ 0 ]);
            var s$97 = match$193[1];
            var de$98 = $($1($(oc$Pervasives$[2])), de$98);
            de$98[1] = de$98;
            var de_next$99 = $(de$98);
-           _(oc$Froc$[27],
+           _(oc$Froc$[23],
              [
                t$94,
                _f(function (r$100) {
-                    var r$101 = _(oc$Froc$[10], [ msb$95 ]);
+                    var r$101 = _(oc$Froc$[7], [ msb$95 ]);
                     switch ($t(r$101))
                     {
                     case 0:
@@ -4952,26 +5039,26 @@ var oc$Froc_dom$ =
              ]);
            return match$193[0];
          });
-    var delay_e$104 = _f(function (t$105, ms$106) { return __(delay_eb$93, [ t$105, _(oc$Froc$[3], [ ms$106 ]) ]); });
+    var delay_e$104 = _f(function (t$105, ms$106) { return __(delay_eb$93, [ t$105, _(oc$Froc$[0], [ ms$106 ]) ]); });
     var delay_bb$107 =
       _f(function (t$108, msb$109) {
            return __($7C$3E$58,
                      [
                        _($7C$3E$58,
                          [
-                           _($7C$3E$58, [ t$108, oc$Froc$[46] ]),
+                           _($7C$3E$58, [ t$108, oc$Froc$[43] ]),
                            _f(function (e$110) { return __(delay_eb$93, [ e$110, msb$109 ]); })
                          ]),
-                       _(oc$Froc$[45], [ 0, _(oc$Froc$[10], [ t$108 ]) ])
+                       _(oc$Froc$[42], [ 0, _(oc$Froc$[7], [ t$108 ]) ])
                      ]);
          });
-    var delay_b$111 = _f(function (t$112, ms$113) { return __(delay_bb$107, [ t$112, _(oc$Froc$[3], [ ms$113 ]) ]); });
+    var delay_b$111 = _f(function (t$112, ms$113) { return __(delay_bb$107, [ t$112, _(oc$Froc$[0], [ ms$113 ]) ]); });
     var mouse_e$114 =
       _f(function (param$185) {
-           var match$187 = _(oc$Froc$[23], [ 0 ]);
-           var f$117 = _f(function (me$118) { return __(oc$Froc$[29], [ match$187[1], $(me$118.clientX, me$118.clientY) ]); });
+           var match$187 = _(oc$Froc$[19], [ 0 ]);
+           var f$117 = _f(function (me$118) { return __(oc$Froc$[25], [ match$187[1], $(me$118.clientX, me$118.clientY) ]); });
            (function () { var v$205 = oc$Dom$[1]; return _m(v$205.addEventListener, v$205, [ "mousemove", f$117, 0 ]); }());
-           _(oc$Froc$[20],
+           _(oc$Froc$[50],
              [
                _f(function (param$186) {
                     return function () {
@@ -4982,33 +5069,33 @@ var oc$Froc_dom$ =
              ]);
            return match$187[0];
          });
-    var mouse_b$119 = _f(function (param$184) { return __(oc$Froc$[44], [ 0, $(0, 0), _(mouse_e$114, [ 0 ]) ]); });
+    var mouse_b$119 = _f(function (param$184) { return __(oc$Froc$[41], [ 0, $(0, 0), _(mouse_e$114, [ 0 ]) ]); });
     var attach_innerHTML$120 =
       _f(function (elem$121, b$122) {
-           var e$123 = _(oc$Froc$[46], [ b$122 ]);
-           return __(oc$Froc$[25], [ e$123, _f(function (s$124) { return elem$121.innerHTML = s$124; }) ]);
+           var e$123 = _(oc$Froc$[43], [ b$122 ]);
+           return __(oc$Froc$[21], [ e$123, _f(function (s$124) { return elem$121.innerHTML = s$124; }) ]);
          });
     var input_value_e$125 =
       _f(function (input$126) {
-           var match$183 = _(oc$Froc$[23], [ 0 ]);
-           var f$129 = _f(function (param$182) { return __(oc$Froc$[29], [ match$183[1], input$126.value ]); });
+           var match$183 = _(oc$Froc$[19], [ 0 ]);
+           var f$129 = _f(function (param$182) { return __(oc$Froc$[25], [ match$183[1], input$126.value ]); });
            _m(input$126.addEventListener, input$126, [ "change", f$129, 0 ]);
-           _(oc$Froc$[20],
+           _(oc$Froc$[50],
              [ _f(function (param$181) { return __m(input$126.addEventListener, input$126, [ "change", f$129, 0 ]); }) ]);
            return match$183[0];
          });
     var input_value_b$130 =
-      _f(function (input$131) { return __(oc$Froc$[44], [ 0, input$131.value, _(input_value_e$125, [ input$131 ]) ]); });
+      _f(function (input$131) { return __(oc$Froc$[41], [ 0, input$131.value, _(input_value_e$125, [ input$131 ]) ]); });
     var attach_input_value_e$132 =
-      _f(function (i$133, e$134) { return __(oc$Froc$[25], [ e$134, _f(function (v$135) { return i$133.value = v$135; }) ]); });
+      _f(function (i$133, e$134) { return __(oc$Froc$[21], [ e$134, _f(function (v$135) { return i$133.value = v$135; }) ]); });
     var attach_input_value_b$136 =
-      _f(function (i$137, b$138) { return __(attach_input_value_e$132, [ i$137, _(oc$Froc$[46], [ b$138 ]) ]); });
+      _f(function (i$137, b$138) { return __(attach_input_value_e$132, [ i$137, _(oc$Froc$[43], [ b$138 ]) ]); });
     var attach_backgroundColor_e$139 =
       _f(function (el$140, e$141) {
-           return __(oc$Froc$[25], [ e$141, _f(function (v$142) { return el$140.style.backgroundColor = v$142; }) ]);
+           return __(oc$Froc$[21], [ e$141, _f(function (v$142) { return el$140.style.backgroundColor = v$142; }) ]);
          });
     var attach_backgroundColor_b$143 =
-      _f(function (el$144, b$145) { return __(attach_backgroundColor_e$139, [ el$144, _(oc$Froc$[46], [ b$145 ]) ]); });
+      _f(function (el$144, b$145) { return __(attach_backgroundColor_e$139, [ el$144, _(oc$Froc$[43], [ b$145 ]) ]); });
     var node_of_result$146 =
       _f(function (param$180) {
            switch ($t(param$180))
@@ -5035,7 +5122,7 @@ var oc$Froc_dom$ =
                     _m(n$152.appendChild, n$152, [ c$158 ]);
                   return old$155[0] = $(c$158);
                 });
-           return __(oc$Froc$[18], [ 0, nb$153, update$156 ]);
+           return __(oc$Froc$[16], [ 0, nb$153, update$156 ]);
          });
     var replaceNode$160 =
       _f(function (n$161, nb$162) {
@@ -5047,15 +5134,15 @@ var oc$Froc_dom$ =
                   _m(p$164.replaceChild, p$164, [ c$168, old$165[0] ]);
                   return old$165[0] = c$168;
                 });
-           return __(oc$Froc$[18], [ 0, nb$162, update$166 ]);
+           return __(oc$Froc$[16], [ 0, nb$162, update$166 ]);
          });
     var clicks$169 =
       _f(function (elem$170) {
-           var match$178 = _(oc$Froc$[23], [ 0 ]);
+           var match$178 = _(oc$Froc$[19], [ 0 ]);
            var f$173 =
-             _f(function (ev$174) { _m(ev$174.preventDefault, ev$174, [  ]); return __(oc$Froc$[29], [ match$178[1], 0 ]); });
+             _f(function (ev$174) { _m(ev$174.preventDefault, ev$174, [  ]); return __(oc$Froc$[25], [ match$178[1], 0 ]); });
            _m(elem$170.addEventListener, elem$170, [ "click", f$173, 0 ]);
-           _(oc$Froc$[20],
+           _(oc$Froc$[50],
              [ _f(function (param$177) { return __m(elem$170.removeEventListener, elem$170, [ "click", f$173, 0 ]); }) ]);
            return match$178[0];
          });
@@ -5063,52 +5150,136 @@ var oc$Froc_dom$ =
              attach_innerHTML$120, input_value_e$125, input_value_b$130, attach_input_value_e$132, attach_input_value_b$136,
              attach_backgroundColor_e$139, attach_backgroundColor_b$143, appendChild$151, replaceNode$160, clicks$169);
   }();
-var oc$Clicks$ =
+var oc$Follow$ =
   function () {
     var D$58 = oc$Dom$;
     var F$59 = oc$Froc$;
     var Fd$60 = oc$Froc_dom$;
-    var $3E$3E$3D$61 = F$59[6];
-    var onload$62 =
-      _f(function (param$277) {
-           var clicks$63 =
-             _(F$59[48],
-               [ _(Fd$60[17], [ function () { var v$281 = D$58[1]; return _m(v$281.getElementById, v$281, [ "click" ]); }() ]) ]);
-           var ticks$64 = _(F$59[48], [ _(Fd$60[0], [ 1000. ]) ]);
-           _(Fd$60[8],
+    var onload$61 =
+      _f(function (param$301) {
+           var delay$62 = 300.;
+           var body$63 = function () { var v$315 = D$58[1]; return _m(v$315.getElementById, v$315, [ "body" ]); }();
+           var div$64 =
+             _f(function (id$65, color$66, backgroundColor$67, position$68, padding$69, left$70, top$71, cs$72) {
+                  var div$73 = function () { var v$314 = D$58[1]; return _m(v$314.createElement, v$314, [ "div" ]); }();
+                  _m(div$73.setAttribute, div$73, [ "id", id$65 ]);
+                  div$73.style.color = color$66;
+                  div$73.style.backgroundColor = backgroundColor$67;
+                  div$73.style.position = position$68;
+                  div$73.style.padding = padding$69;
+                  div$73.style.left = left$70;
+                  div$73.style.top = top$71;
+                  _(oc$List$[9], [ _f(function (c$74) { _m(div$73.appendChild, div$73, [ c$74 ]); return 0; }), cs$72 ]);
+                  return div$73;
+                });
+           var mouse$75 = _(Fd$60[7], [ 0 ]);
+           _(Fd$60[15],
              [
-               function () { var v$280 = D$58[1]; return _m(v$280.getElementById, v$280, [ "clicks" ]); }(),
-               _($3E$3E$3D$61, [ clicks$63, _f(function (c$65) { return __(F$59[3], [ _(oc$Pervasives$[19], [ c$65 ]) ]); }) ])
+               body$63,
+               _(F$59[4],
+                 [
+                   0,
+                   mouse$75,
+                   _f(function (param$308) {
+                        return __(div$64,
+                                  [
+                                    "themouse",
+                                    "#FFFFFF",
+                                    "#000000",
+                                    "absolute",
+                                    "10px",
+                                    _(oc$Pervasives$[19], [ param$308[0] ]),
+                                    _(oc$Pervasives$[19], [ param$308[1] ]),
+                                    $(function () {
+                                        var v$313 = D$58[1];
+                                        return _m(v$313.createTextNode, v$313, [ "the mouse!" ]);
+                                      }(), 0)
+                                  ]);
+                      })
+                 ])
              ]);
-           _(Fd$60[8],
+           var mouse_offset$78 =
+             (function () { var v$312 = D$58[1]; return _m(v$312.getElementById, v$312, [ "themouse" ]); }()).offsetWidth;
+           var tail_pos$79 =
+             _(F$59[4],
+               [
+                 0,
+                 _(Fd$60[4], [ mouse$75, delay$62 ]),
+                 _f(function (param$307) { return $(param$307[0] + mouse_offset$78, param$307[1]); })
+               ]);
+           _(Fd$60[15],
              [
-               function () { var v$279 = D$58[1]; return _m(v$279.getElementById, v$279, [ "seconds" ]); }(),
-               _($3E$3E$3D$61, [ ticks$64, _f(function (s$66) { return __(F$59[3], [ _(oc$Pervasives$[19], [ s$66 ]) ]); }) ])
+               body$63,
+               _(F$59[4],
+                 [
+                   0,
+                   tail_pos$79,
+                   _f(function (param$306) {
+                        return __(div$64,
+                                  [
+                                    "tail",
+                                    "#FF0000",
+                                    "#000000",
+                                    "absolute",
+                                    "10px",
+                                    _(oc$Pervasives$[19], [ param$306[0] ]),
+                                    _(oc$Pervasives$[19], [ param$306[1] ]),
+                                    $(function () { var v$311 = D$58[1]; return _m(v$311.createTextNode, v$311, [ "its tail!" ]); }
+                                      (), 0)
+                                  ]);
+                      })
+                 ])
              ]);
-           return __(Fd$60[8],
+           var wag_delay$84 = delay$62 * 1.5;
+           var mouseandtail_offset$85 =
+             mouse_offset$78 +
+               (function () { var v$310 = D$58[1]; return _m(v$310.getElementById, v$310, [ "tail" ]); }()).offsetWidth;
+           var wag_offset$86 =
+             _(F$59[41],
+               [
+                 0,
+                 0,
+                 _(F$59[35],
+                   [ _f(function (param$304, param$305) { return _(oc$Random$[4], [ 10 ]) - 5; }), 0, _(Fd$60[0], [ 100. ]) ])
+               ]);
+           var wag_pos$87 =
+             _(F$59[55],
+               [
+                 0,
+                 _(Fd$60[4], [ mouse$75, wag_delay$84 ]),
+                 wag_offset$86,
+                 _f(function (param$303, wag_offset$90) {
+                      return $(param$303[0] + mouseandtail_offset$85, param$303[1] + wag_offset$90);
+                    })
+               ]);
+           return __(Fd$60[15],
                      [
-                       function () { var v$278 = D$58[1]; return _m(v$278.getElementById, v$278, [ "difference" ]); }(),
-                       _(F$59[53],
+                       body$63,
+                       _(F$59[4],
                          [
                            0,
-                           clicks$63,
-                           ticks$64,
-                           _f(function (clicks$67, ticks$68) {
-                                var s$69 =
-                                  clicks$67 === ticks$68 ?
-                                    "same number of clicks as ticks" :
-                                    clicks$67 > ticks$68 ?
-                                      _(oc$Pervasives$[15],
-                                        [ _(oc$Pervasives$[19], [ clicks$67 - ticks$68 ]), " more clicks than ticks" ]) :
-                                      _(oc$Pervasives$[15],
-                                        [ _(oc$Pervasives$[19], [ ticks$68 - clicks$67 ]), " more ticks than clicks" ]);
-                                return __(F$59[3], [ s$69 ]);
+                           wag_pos$87,
+                           _f(function (param$302) {
+                                return __(div$64,
+                                          [
+                                            "wagging",
+                                            "#FFFF00",
+                                            "#000000",
+                                            "absolute",
+                                            "10px",
+                                            _(oc$Pervasives$[19], [ param$302[0] ]),
+                                            _(oc$Pervasives$[19], [ param$302[1] ]),
+                                            $(function () {
+                                                var v$309 = D$58[1];
+                                                return _m(v$309.createTextNode, v$309, [ "is happy!" ]);
+                                              }(), 0)
+                                          ]);
                               })
                          ])
                      ]);
          });
-    (D$58[0]).onload = onload$62;
-    return $(D$58, F$59, Fd$60, $3E$3E$3D$61, onload$62);
+    (D$58[0]).onload = onload$61;
+    return $(D$58, F$59, Fd$60, onload$61);
   }();
 var oc$Std_exit$ = (_(oc$Pervasives$[80], [ 0 ]), $());
 return caml_named_value;
