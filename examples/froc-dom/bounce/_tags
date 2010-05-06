@@ -1,0 +1,2 @@
+<bounce.ml> : pkg_froc-dom,pkg_javascript,syntax_camlp4o,pkg_camlp4.macro
+<bounce.js> : pkg_froc-dom,pkg_javascript
