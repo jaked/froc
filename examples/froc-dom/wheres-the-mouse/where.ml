@@ -21,4 +21,4 @@ let onload () =
 
 ;;
 
-D.window#_set_onload onload
+D.window#_set_onload (Ocamljs.jsfun onload)

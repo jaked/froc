@@ -174,11 +174,11 @@ let get_board rows _ =
 let onload () =
   let (rows, table) = make_board () in
   let new_game = d#getElementById "new_game" in
-  new_game#_set_onclick (get_board rows);
+  new_game#_set_onclick (Ocamljs.jsfun (get_board rows));
   let board = d#getElementById "board" in
   ignore (board#appendChild table)
 
 ;;
 
 F.init ();
-D.window#_set_onload onload
+D.window#_set_onload (Ocamljs.jsfun onload)

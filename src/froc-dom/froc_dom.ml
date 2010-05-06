@@ -30,7 +30,7 @@ let ticks_b msb =
   let set_interval r =
     clear ();
     match r with
-      | Value p -> id := Some (Dom.window#setInterval (fun () -> send s ()) p)
+      | Value p -> id := Some (Dom.window#setInterval (Ocamljs.jsfun (fun () -> send s ())) p)
       | Fail _ -> () (* ? *) in
   cleanup clear;
   notify_result_b msb set_interval;
@@ -38,7 +38,7 @@ let ticks_b msb =
 
 let ticks ms =
   let e, s = make_event () in
-  let id = Dom.window#setInterval (fun () -> send s ()) ms in
+  let id = Dom.window#setInterval (Ocamljs.jsfun (fun () -> send s ())) ms in
   cleanup (fun () -> Dom.window#clearInterval id);
   e
 
@@ -70,7 +70,7 @@ let delay_eb t msb =
       | Value ms ->
           let de = { l_val = r; l_next = !de_next } in
           de_next := de;
-          ignore (Dom.window#setTimeout (fun () -> send_delayed_event s de) ms)
+          ignore (Dom.window#setTimeout (Ocamljs.jsfun (fun () -> send_delayed_event s de)) ms)
   end;
   e
 
@@ -83,7 +83,7 @@ let delay_b t ms = delay_bb t (return ms)
 
 let mouse_e () =
   let e, s = make_event () in
-  let f me = send s (me#_get_clientX, me#_get_clientY) in
+  let f = Ocamljs.jsfun (fun me -> send s (me#_get_clientX, me#_get_clientY)) in
   Dom.document#addEventListener_mouseEvent_ "mousemove" f false;
   cleanup (fun () -> Dom.document#addEventListener_mouseEvent_ "mousemove" f false);
   e
@@ -96,7 +96,7 @@ let attach_innerHTML elem b =
 
 let input_value_e input =
   let e, s = make_event () in
-  let f _ = send s input#_get_value in
+  let f = Ocamljs.jsfun (fun _ -> send s input#_get_value) in
   input#addEventListener "change" f false;
   cleanup (fun () -> input#addEventListener "change" f false);
   e
@@ -143,7 +143,7 @@ let replaceNode n nb =
 
 let clicks (elem : #Dom.element) =
   let e, s = make_event () in
-  let f ev = ev#preventDefault; send s () in
+  let f = Ocamljs.jsfun (fun ev -> ev#preventDefault; send s ()) in
   elem#addEventListener "click" f false;
   cleanup (fun () -> elem#removeEventListener "click" f false);
   e
