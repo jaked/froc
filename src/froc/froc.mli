@@ -30,7 +30,7 @@
 
    A {e behavior} is a value that can change over time, but is defined
    at all times. An {e event} is defined only at particular instants
-   in time, with a possibly different value at each instance; when an
+   in time, with a possibly different value at each instant; when an
    event takes value [v] we say it {e occurs with value} [v] or {e
    fires} [v]. Values are sent to an event using the associated {e
    event sender}. A behavior or an event is a {e signal} when we don't
