@@ -315,8 +315,15 @@ val merge : 'a event list -> 'a event
 
 val map : ('a -> 'b) -> 'a event -> 'b event
   (**
-     [map f e] is an event that fires [f v] whenever [e] fires
-     [v]. The function [f] delimits a dynamic scope governed by [e].
+     [map f e] fires [f v] whenever [e] fires [v]. The function [f]
+     delimits a dynamic scope governed by [e].
+  *)
+
+val map2 : ('a -> 'b -> 'c) -> 'a event -> 'b event -> 'c event
+  (**
+     [map2 f e1 e2] fires [f v1 v2] whenever [e1] and [e2] fire [v1]
+     and [v2] simultaneously. The function [f] delimits a dynamic
+     scope governed by [e1] and [e2].
   *)
 
 val filter : ('a -> bool) -> 'a event -> 'a event

@@ -143,6 +143,28 @@ let map f t =
     end;
     rt
 
+let map2 f t1 t2 =
+  if is_never t1 && is_never t2 then never
+  else
+    let rt, ru = make_event () in
+    let notify = ref false in
+    add_reader2 t1 t2 begin fun () ->
+      if not !notify then notify := true
+      else
+        let r =
+          match read_result t1, read_result t2 with
+            | Fail Unset, _
+            | _, Fail Unset -> None
+            | Fail e, _
+            | _, Fail e -> Some (Fail e)
+            | Value v1, Value v2 ->
+                try Some (Value (f v1 v2)) with e -> Some (Fail e) in
+        match r with
+          | None -> ()
+          | Some r -> write_temp_result ru r
+    end;
+    rt
+
 let filter p t =
   if is_never t then never
   else
