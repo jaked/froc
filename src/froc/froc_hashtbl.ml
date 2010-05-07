@@ -32,12 +32,14 @@ and ('a, 'b) bucketlist =
 
 let total_eq v1 v2 = try compare v1 v2 = 0 with _ -> false
 
-let hash _ =
-  (*
-    ocamljs 0.2 doesn't implement Hashtbl.hash and it isn't easy to
-    retrofit it. obviously this is a terrible hash function.
-  *)
-  0
+let hash =
+  IFDEF OCAMLJS THEN
+    (*
+      ocamljs 0.2 doesn't implement Hashtbl.hash and it isn't easy to
+      retrofit it. obviously this is a terrible hash function.
+    *)
+    fun _ -> 0
+  ELSE Hashtbl.hash ENDIF
 
 let create ?(size = 17) ?(hash = hash) ?(eq = total_eq) () =
   let s = min (max 1 size) Sys.max_array_length in
