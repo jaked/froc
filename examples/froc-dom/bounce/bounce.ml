@@ -37,10 +37,25 @@ let onload () =
   let ball_point =
     F.fix_b begin fun bp ->
 
-      let x_lo = F.map (fun () -> `X_lo) (F.when_true (F.blift bp (fun (x, _) -> x <= min))) in
-      let x_hi = F.map (fun () -> `X_hi) (F.when_true (F.blift bp (fun (x, _) -> x >= max))) in
-      let y_lo = F.map (fun () -> `Y_lo) (F.when_true (F.blift bp (fun (_, y) -> y <= min))) in
-      let y_hi = F.map (fun () -> `Y_hi) (F.when_true (F.blift bp (fun (_, y) -> y >= max))) in
+      let x_out_of_bounds =
+        F.map
+          (fun () -> `X_bounds)
+          (F.when_true
+             (F.blift bp (fun (x, _) -> x <= min || x >= max))) in
+
+      let y_out_of_bounds =
+        F.map
+          (fun () -> `Y_bounds)
+          (F.when_true
+             (F.blift bp (fun (_, y) -> y <= min || y >= max))) in
+
+      (*
+        the merge below reports only the leftmost simultaneous event,
+        so we have to account for the combination to avoid losing the
+        ball in the corners. is there a more compositional way?
+      *)
+      let xy_out_of_bounds =
+        F.map2 (fun _ _ -> `Xy_bounds) x_out_of_bounds y_out_of_bounds in
 
       let hit_paddle =
         F.map (fun () -> `Paddle)
@@ -53,9 +68,6 @@ let onload () =
                 dist_x *. dist_x +. dist_y *. dist_y <= dist *. dist
               end)) in
 
-      let positive v = if v < 0. then -.v else v in
-      let negative v = if v > 0. then -.v else v in
-
       let v =
         F.fix_b begin fun v ->
           F.hold
@@ -63,15 +75,13 @@ let onload () =
             (F.map
                begin fun e ->
                  let (vx, vy) = F.sample v in
+                 let (x, y) = F.sample bp in
                  match e with
-                   | `X_lo -> (positive vx, vy)
-                   | `X_hi -> (negative vx, vy)
-                   | `Y_lo -> (vx, positive vy)
-                   | `Y_hi -> (vx, negative vy)
-
+                   | `X_bounds -> (-.vx, vy)
+                   | `Y_bounds -> (vx, -.vy)
+                   | `Xy_bounds -> (-.vx, -.vy)
                    | `Paddle ->
                        (* bounce v off the tangent to the paddle *)
-                       let (x, y) = F.sample bp in
                        let (px, py) = F.sample paddle_point in
                        let (nx, ny) =
                          let (nx, ny) = (x -. px, y -. py) in
@@ -80,7 +90,7 @@ let onload () =
                        let dp = vx *. nx +. vy *. ny in
                        (vx -. 2. *. dp *. nx, vy -. 2. *. dp *. ny)
                end
-               (F.merge [ x_lo; x_hi; y_lo; y_hi; hit_paddle ]))
+               (F.merge [ xy_out_of_bounds; x_out_of_bounds; y_out_of_bounds; hit_paddle ]))
         end in
 
       F.hold init_p

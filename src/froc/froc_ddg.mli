@@ -42,8 +42,8 @@ val bind : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b t) -> 'b t
 val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
 val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a t -> 'b t 
 val blift : ?eq:('b -> 'b -> bool) -> 'a t -> ('a -> 'b) -> 'b t
-val add_reader : 'a t -> (unit -> unit) -> unit
-val add_reader_cancel : 'a t -> (unit -> unit) -> cancel
+val add_reader : ?now:bool -> 'a t -> (unit -> unit) -> unit
+val add_reader_cancel : ?now:bool -> 'a t -> (unit -> unit) -> cancel
 
 val catch : ?eq:('a -> 'a -> bool) -> (unit -> 'a t) -> (exn -> 'a t) -> 'a t
 val try_bind : ?eq:('b -> 'b -> bool) -> (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
@@ -57,10 +57,10 @@ val write_exn : 'a u -> exn -> unit
 val write_result : 'a u -> 'a result -> unit
 val clear : 'a u -> unit
 
-val notify : ?current:bool -> 'a t -> ('a -> unit) -> unit
-val notify_cancel : ?current:bool -> 'a t -> ('a -> unit) -> cancel
-val notify_result : ?current:bool -> 'a t -> ('a result -> unit) -> unit
-val notify_result_cancel : ?current:bool -> 'a t -> ('a result -> unit) -> cancel
+val notify : ?now:bool -> 'a t -> ('a -> unit) -> unit
+val notify_cancel : ?now:bool -> 'a t -> ('a -> unit) -> cancel
+val notify_result : ?now:bool -> 'a t -> ('a result -> unit) -> unit
+val notify_result_cancel : ?now:bool -> 'a t -> ('a result -> unit) -> cancel
 val connect : 'a u -> 'a t -> unit
 val connect_cancel : 'a u -> 'a t -> cancel
 val cleanup : (unit -> unit) -> unit
@@ -96,6 +96,7 @@ val blift2 :
   ('a1 -> 'a2 -> 'b) ->
   'b t
 val add_reader2 :
+  ?now:bool ->
   'a1 t -> 'a2 t ->
   (unit -> unit) -> unit
 
@@ -115,6 +116,7 @@ val blift3 :
   ('a1 -> 'a2 -> 'a3 -> 'b) ->
   'b t
 val add_reader3 :
+  ?now:bool ->
   'a1 t -> 'a2 t -> 'a3 t ->
   (unit -> unit) -> unit
 
@@ -134,6 +136,7 @@ val blift4 :
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'b) ->
   'b t
 val add_reader4 :
+  ?now:bool ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t ->
   (unit -> unit) -> unit
 
@@ -153,6 +156,7 @@ val blift5 :
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'b) ->
   'b t
 val add_reader5 :
+  ?now:bool ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t ->
   (unit -> unit) -> unit
 
@@ -172,6 +176,7 @@ val blift6 :
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'b) ->
   'b t
 val add_reader6 :
+  ?now:bool ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t ->
   (unit -> unit) -> unit
 
@@ -191,10 +196,11 @@ val blift7 :
   ('a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'b) ->
   'b t
 val add_reader7 :
+  ?now:bool ->
   'a1 t -> 'a2 t -> 'a3 t -> 'a4 t -> 'a5 t -> 'a6 t -> 'a7 t ->
   (unit -> unit) -> unit
 
 val bindN : ?eq:('b -> 'b -> bool) -> 'a t list -> ('a list -> 'b t) -> 'b t
 val liftN : ?eq:('b -> 'b -> bool) -> ('a list -> 'b) -> 'a t list -> 'b t
 val bliftN : ?eq:('b -> 'b -> bool) -> 'a t list -> ('a list -> 'b) -> 'b t
-val add_readerN : 'a t list -> (unit -> unit) -> unit
+val add_readerN : ?now:bool -> 'a t list -> (unit -> unit) -> unit
