@@ -432,8 +432,13 @@ Makes a new event taking values of type <code class="code">'a</code>.
 </td></tr>
 <tr><td><a href="Froc.html#VALmap">map</a> [<a href="Froc.html">Froc</a>]</td>
 <td><div class="info">
-<code class="code">map f e</code> is an event that fires <code class="code">f v</code> whenever <code class="code">e</code> fires
-     <code class="code">v</code>.
+<code class="code">map f e</code> fires <code class="code">f v</code> whenever <code class="code">e</code> fires <code class="code">v</code>.
+</div>
+</td></tr>
+<tr><td><a href="Froc.html#VALmap2">map2</a> [<a href="Froc.html">Froc</a>]</td>
+<td><div class="info">
+<code class="code">map2 f e1 e2</code> fires <code class="code">f v1 v2</code> whenever <code class="code">e1</code> and <code class="code">e2</code> fire <code class="code">v1</code>
+     and <code class="code">v2</code> simultaneously.
 </div>
 </td></tr>
 <tr><td><a href="Froc_sa.html#VALmemo">memo</a> [<a href="Froc_sa.html">Froc_sa</a>]</td>

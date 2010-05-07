@@ -45,7 +45,7 @@
 
    A <em>behavior</em> is a value that can change over time, but is defined
    at all times. An <em>event</em> is defined only at particular instants
-   in time, with a possibly different value at each instance; when an
+   in time, with a possibly different value at each instant; when an
    event takes value <code class="code">v</code> we say it <em>occurs with value</em> <code class="code">v</code> or <em>   fires</em> <code class="code">v</code>. Values are sent to an event using the associated <em>   event sender</em>. A behavior or an event is a <em>signal</em> when we don't
    care to specify which one it is, and we say a signal "changes" to
    mean that it changes if it is a behavior or occurs if it is an
@@ -194,7 +194,7 @@ Same as <code class="code">sample</code> but returns a result.<br>
 <code class="code">fix_b bf</code> returns <code class="code">bf b'</code> where <code class="code">b'</code> behaves like <code class="code">bf b'</code>, but
      delayed one update cycle.<br>
 </div>
-<pre><span class="keyword">val</span> <a name="VALnotify_b"></a>notify_b : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a -> unit) -> unit</code></pre><div class="info">
+<pre><span class="keyword">val</span> <a name="VALnotify_b"></a>notify_b : <code class="type">?now:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a -> unit) -> unit</code></pre><div class="info">
 <code class="code">notify_b b f</code> adds <code class="code">f</code> as a listener for <code class="code">b</code>, which is called
      whenever <code class="code">b</code> changes. When <code class="code">b</code> fails the listener is not
      called. The notification is cancelled when the enclosing dynamic
@@ -202,18 +202,18 @@ Same as <code class="code">sample</code> but returns a result.<br>
 <p>
 
      The listener is called immediately with the current value of the
-     behavior, unless <code class="code">current</code> is false. The function <code class="code">f</code> delimits a
+     behavior, unless <code class="code">now</code> is false. The function <code class="code">f</code> delimits a
      dynamic scope governed by <code class="code">b</code>.<br>
 </div>
-<pre><span class="keyword">val</span> <a name="VALnotify_b_cancel"></a>notify_b_cancel : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
+<pre><span class="keyword">val</span> <a name="VALnotify_b_cancel"></a>notify_b_cancel : <code class="type">?now:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
 Same as <code class="code">notify_b</code>, and returns a cancel handle (the notification
      is still cancelled when the enclosing dynamic scope is cleaned up).<br>
 </div>
-<pre><span class="keyword">val</span> <a name="VALnotify_result_b"></a>notify_result_b : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> unit</code></pre><div class="info">
+<pre><span class="keyword">val</span> <a name="VALnotify_result_b"></a>notify_result_b : <code class="type">?now:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> unit</code></pre><div class="info">
 Same as <code class="code">notify_b</code> but the listener is called with a result when
      the value changes or when the behavior fails.<br>
 </div>
-<pre><span class="keyword">val</span> <a name="VALnotify_result_b_cancel"></a>notify_result_b_cancel : <code class="type">?current:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
+<pre><span class="keyword">val</span> <a name="VALnotify_result_b_cancel"></a>notify_result_b_cancel : <code class="type">?now:bool -> 'a <a href="Froc.html#TYPEbehavior">behavior</a> -> ('a <a href="Froc.html#TYPEresult">result</a> -> unit) -> <a href="Froc.html#TYPEcancel">cancel</a></code></pre><div class="info">
 Same as <code class="code">notify_result_b</code>, and returns a cancel handle (the
      notification is still cancelled when the enclosing dynamic scope
      is cleaned up).<br>
@@ -297,8 +297,13 @@ Same as <code class="code">notify_result_e</code>, and returns a cancel handle (
      in the list is passed on.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALmap"></a>map : <code class="type">('a -> 'b) -> 'a <a href="Froc.html#TYPEevent">event</a> -> 'b <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
-<code class="code">map f e</code> is an event that fires <code class="code">f v</code> whenever <code class="code">e</code> fires
-     <code class="code">v</code>. The function <code class="code">f</code> delimits a dynamic scope governed by <code class="code">e</code>.<br>
+<code class="code">map f e</code> fires <code class="code">f v</code> whenever <code class="code">e</code> fires <code class="code">v</code>. The function <code class="code">f</code>
+     delimits a dynamic scope governed by <code class="code">e</code>.<br>
+</div>
+<pre><span class="keyword">val</span> <a name="VALmap2"></a>map2 : <code class="type">('a -> 'b -> 'c) -> 'a <a href="Froc.html#TYPEevent">event</a> -> 'b <a href="Froc.html#TYPEevent">event</a> -> 'c <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
+<code class="code">map2 f e1 e2</code> fires <code class="code">f v1 v2</code> whenever <code class="code">e1</code> and <code class="code">e2</code> fire <code class="code">v1</code>
+     and <code class="code">v2</code> simultaneously. The function <code class="code">f</code> delimits a dynamic
+     scope governed by <code class="code">e1</code> and <code class="code">e2</code>.<br>
 </div>
 <pre><span class="keyword">val</span> <a name="VALfilter"></a>filter : <code class="type">('a -> bool) -> 'a <a href="Froc.html#TYPEevent">event</a> -> 'a <a href="Froc.html#TYPEevent">event</a></code></pre><div class="info">
 <code class="code">filter p e</code> is an event that fires <code class="code">v</code> whenever <code class="code">e</code> fires <code class="code">v</code>
