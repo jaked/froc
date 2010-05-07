@@ -183,7 +183,7 @@ val fix_b : ?eq:('a -> 'a -> bool) -> ('a behavior -> 'a behavior) -> 'a behavio
      delayed one update cycle.
   *)
 
-val notify_b : ?current:bool -> 'a behavior -> ('a -> unit) -> unit
+val notify_b : ?now:bool -> 'a behavior -> ('a -> unit) -> unit
   (**
      [notify_b b f] adds [f] as a listener for [b], which is called
      whenever [b] changes. When [b] fails the listener is not
@@ -191,24 +191,24 @@ val notify_b : ?current:bool -> 'a behavior -> ('a -> unit) -> unit
      scope is cleaned up.
      
      The listener is called immediately with the current value of the
-     behavior, unless [current] is false. The function [f] delimits a
+     behavior, unless [now] is false. The function [f] delimits a
      dynamic scope governed by [b].
   *)
 
-val notify_b_cancel : ?current:bool -> 'a behavior -> ('a -> unit) -> cancel
+val notify_b_cancel : ?now:bool -> 'a behavior -> ('a -> unit) -> cancel
   (**
 
      Same as [notify_b], and returns a cancel handle (the notification
      is still cancelled when the enclosing dynamic scope is cleaned up).
   *)
 
-val notify_result_b : ?current:bool -> 'a behavior -> ('a result -> unit) -> unit
+val notify_result_b : ?now:bool -> 'a behavior -> ('a result -> unit) -> unit
   (**
      Same as [notify_b] but the listener is called with a result when
      the value changes or when the behavior fails.
   *)
 
-val notify_result_b_cancel : ?current:bool -> 'a behavior -> ('a result -> unit) -> cancel
+val notify_result_b_cancel : ?now:bool -> 'a behavior -> ('a result -> unit) -> cancel
   (**
      Same as [notify_result_b], and returns a cancel handle (the
      notification is still cancelled when the enclosing dynamic scope

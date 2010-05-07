@@ -91,10 +91,10 @@ let make_event () = make_changeable ~eq:never_eq ()
 let never = make_constant (Fail Unset)
 let is_never = is_constant
 
-let notify_result_e_cancel t f = notify_result_cancel ~current:false t f
-let notify_result_e t f = notify_result ~current:false t f
-let notify_e_cancel t f = notify_cancel ~current:false t f
-let notify_e t f = notify ~current:false t f
+let notify_result_e_cancel t f = notify_result_cancel ~now:false t f
+let notify_result_e t f = notify_result ~now:false t f
+let notify_e_cancel t f = notify_cancel ~now:false t f
+let notify_e t f = notify ~now:false t f
 
 let hash_event = hash
 
@@ -116,16 +116,13 @@ let merge ts =
   if List.for_all is_never ts then never
   else
     let rt, ru = make_event () in
-    let notify = ref false in
-    add_readerN ts begin fun () ->
-      if not !notify then notify := true
-      else
-        let rec loop = function
-          | [] -> assert false
-          | h :: t ->
-              match read_result h with
-                | Fail Unset -> loop t
-                | r -> r in
+    add_readerN ~now:false ts begin fun () ->
+      let rec loop = function
+        | [] -> assert false
+        | h :: t ->
+            match read_result h with
+              | Fail Unset -> loop t
+              | r -> r in
         write_temp_result ru (loop ts)
     end;
     rt
@@ -147,21 +144,18 @@ let map2 f t1 t2 =
   if is_never t1 && is_never t2 then never
   else
     let rt, ru = make_event () in
-    let notify = ref false in
-    add_reader2 t1 t2 begin fun () ->
-      if not !notify then notify := true
-      else
-        let r =
-          match read_result t1, read_result t2 with
-            | Fail Unset, _
-            | _, Fail Unset -> None
-            | Fail e, _
-            | _, Fail e -> Some (Fail e)
-            | Value v1, Value v2 ->
-                try Some (Value (f v1 v2)) with e -> Some (Fail e) in
-        match r with
-          | None -> ()
-          | Some r -> write_temp_result ru r
+    add_reader2 ~now:false t1 t2 begin fun () ->
+      let r =
+        match read_result t1, read_result t2 with
+          | Fail Unset, _
+          | _, Fail Unset -> None
+          | Fail e, _
+          | _, Fail e -> Some (Fail e)
+          | Value v1, Value v2 ->
+              try Some (Value (f v1 v2)) with e -> Some (Fail e) in
+      match r with
+        | None -> ()
+        | Some r -> write_temp_result ru r
     end;
     rt
 
@@ -259,7 +253,7 @@ let hold ?eq init e = hold_result ?eq (Value init) e
 let changes b =
   if is_constant b then never else
     let t, u = make_event () in
-    notify_result_b ~current:false b (write_temp_result u);
+    notify_result_b ~now:false b (write_temp_result u);
     t
 
 let when_true b =

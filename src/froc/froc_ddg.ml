@@ -249,14 +249,21 @@ let init () =
 
 let enqueue e = PQ.add !pq e
 
-let add_reader_cancel t read =
+let read_now ?(now=true) read =
+  if now then read
+  else
+    let notify = ref false in
+    fun () -> if not !notify then notify := true else read ()
+
+let add_reader_cancel ?now t read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
   let dep _ = enqueue r in
   add_dep_cancel start t dep
 
-let add_reader t read = let _ = add_reader_cancel t read in ()
+let add_reader ?now t read = let _ = add_reader_cancel ?now t read in ()
 
 let connect_cancel u t' =
   write_result u (read_result t');
@@ -266,27 +273,18 @@ let connect u t' =
   write_result u (read_result t');
   add_dep (TS.tick ()) t' (write_result_no_eq u)
 
-let notify_result_cancel ?(current=true) t f =
-  if current
-  then
-    add_reader_cancel t begin fun () ->
-      try f (read_result t) with e -> !handle_exn e
-    end
-  else
-    let notify = ref false in
-    add_reader_cancel t begin fun () ->
-      if not !notify then notify := true
-      else
-        try f (read_result t) with e -> !handle_exn e
-    end
+let notify_result_cancel ?now t f =
+  add_reader_cancel ?now t begin fun () ->
+    try f (read_result t) with e -> !handle_exn e
+  end
 
-let notify_result ?current t f = let _ = notify_result_cancel ?current t f in ()
+let notify_result ?now t f = let _ = notify_result_cancel ?now t f in ()
 
-let notify_cancel ?current t f =
-  notify_result_cancel ?current t (function Fail _ -> () | Value v -> f v)
+let notify_cancel ?now t f =
+  notify_result_cancel ?now t (function Fail _ -> () | Value v -> f v)
 
-let notify ?current t f =
-  notify_result ?current t (function Fail _ -> () | Value v -> f v)
+let notify ?now t f =
+  notify_result ?now t (function Fail _ -> () | Value v -> f v)
 
 let cleanup f =
   TS.add_cleanup (TS.tick ()) f
@@ -400,7 +398,8 @@ let memo ?size ?hash ?eq () =
         result in
     match result with Value v -> v | Fail e -> raise e
 
-let add_reader2 t1 t2 read =
+let add_reader2 ?now t1 t2 read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -427,7 +426,8 @@ let bind2 ?eq t1 t2 f = bind2_gen ?eq identity connect f t1 t2
 let lift2 ?eq f = bind2_gen ?eq return write f
 let blift2 ?eq t1 t2 f = lift2 ?eq f t1 t2
 
-let add_reader3 t1 t2 t3 read =
+let add_reader3 ?now t1 t2 t3 read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -457,7 +457,8 @@ let bind3 ?eq t1 t2 t3 f = bind3_gen ?eq identity connect f t1 t2 t3
 let lift3 ?eq f = bind3_gen ?eq return write f
 let blift3 ?eq t1 t2 t3 f = lift3 ?eq f t1 t2 t3
 
-let add_reader4 t1 t2 t3 t4 read =
+let add_reader4 ?now t1 t2 t3 t4 read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -493,7 +494,8 @@ let bind4 ?eq t1 t2 t3 t4 f = bind4_gen ?eq identity connect f t1 t2 t3 t4
 let lift4 ?eq f = bind4_gen ?eq return write f
 let blift4 ?eq t1 t2 t3 t4 f = lift4 ?eq f t1 t2 t3 t4
 
-let add_reader5 t1 t2 t3 t4 t5 read =
+let add_reader5 ?now t1 t2 t3 t4 t5 read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -532,7 +534,8 @@ let bind5 ?eq t1 t2 t3 t4 t5 f = bind5_gen ?eq identity connect f t1 t2 t3 t4 t5
 let lift5 ?eq f = bind5_gen ?eq return write f
 let blift5 ?eq t1 t2 t3 t4 t5 f = lift5 ?eq f t1 t2 t3 t4 t5
 
-let add_reader6 t1 t2 t3 t4 t5 t6 read =
+let add_reader6 ?now t1 t2 t3 t4 t5 t6 read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -575,7 +578,8 @@ let bind6 ?eq t1 t2 t3 t4 t5 t6 f = bind6_gen ?eq identity connect f t1 t2 t3 t4
 let lift6 ?eq f = bind6_gen ?eq return write f
 let blift6 ?eq t1 t2 t3 t4 t5 t6 f = lift6 ?eq f t1 t2 t3 t4 t5 t6
 
-let add_reader7 t1 t2 t3 t4 t5 t6 t7 read =
+let add_reader7 ?now t1 t2 t3 t4 t5 t6 t7 read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
@@ -621,7 +625,8 @@ let bind7 ?eq t1 t2 t3 t4 t5 t6 t7 f = bind7_gen ?eq identity connect f t1 t2 t3
 let lift7 ?eq f = bind7_gen ?eq return write f
 let blift7 ?eq t1 t2 t3 t4 t5 t6 t7 f = lift7 ?eq f t1 t2 t3 t4 t5 t6 t7
 
-let add_readerN ts read =
+let add_readerN ?now ts read =
+  let read = read_now ?now read in
   let start = TS.tick () in
   read ();
   let r = { read = read; start = start; finish = TS.tick () } in
