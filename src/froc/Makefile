@@ -13,6 +13,7 @@ froc_ddg.mli froc_ddg.cmi \
 BFILES=$(addprefix _build/,$(FILES))
 
 all: myocamlbuild.ml
+	ocamlbuild dummy_quotation.cmo
 	ocamlbuild froc.cma froc.cmxa $(CMJSA)
 	ocamlfind remove -destdir ../../stage froc
 	ocamlfind install -destdir ../../stage froc META $(BFILES)

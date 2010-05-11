@@ -205,6 +205,9 @@ dispatch begin function
        flag ["ocaml"; "js"; "compile"; "pkg_camlp4.macro"] & S[A"-ppopt"; A"-DOCAMLJS"];
        flag ["ocaml"; "js"; "ocamldep"; "pkg_camlp4.macro"] & S[A"-ppopt"; A"-DOCAMLJS"];
 
+       flag ["ocaml"; "compile"; "dummy_quotation"] & S[A"-ppopt"; A"dummy_quotation.cmo"];
+       flag ["ocaml"; "ocamldep"; "dummy_quotation"] & S[A"-ppopt"; A"dummy_quotation.cmo"];
+
        rule ("orpc: %.ml -> %_aux.ml[i]")
          ~prods:[
            "%_aux.ml"; "%_aux.mli";
