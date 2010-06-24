@@ -1,0 +1,204 @@
+<html>
+  <head>
+    <link type="text/css" rel="stylesheet" href="style.css" />
+    <script src="talk.js"></script>
+  </head>
+
+  <body>
+    <div id="slides">
+
+      <div id="title" class="center">
+        <h1 id="title_title"></h1>
+
+        <h2 id="title_email">jake@donham.org</h2>
+      </div>
+
+      <div id="reactive" class="slide" style="display:none">
+        <h2>What is reactive programming?</h2>
+        <ul>
+          <li>program is in some state</li>
+          <li>s**t happens (timer goes off, input arrives)</li>
+          <li>program reacts, changing state (and usually responding with output)</li>
+        </ul>
+
+        <p>e.g.</p>
+
+        <ul>
+          <li>GUIs</li>
+          <li>network stacks</li>
+          <li>industrial control systems</li>
+        </ul>
+
+        <p>most programming is reactive programming (?)</p>
+      </div>
+
+      <div id="gui" class="slide" style="display:none">
+        <h2>GUI as reactive system</h2>
+        <ul>
+          <li>state of the GUI (and internal state)</li>
+          <li>clicks happen</li>
+          <li>screen is updated (and internal state, and output)</li>
+        </ul>
+
+        <p>GUIs are hard!</p>
+        <ul>
+          <li>lots of state involved</li>
+          <li>inherently concurrent (e.g. rendering a web page)</li>
+          <li>a painful combination...</li>
+        </ul>
+      </div>
+
+      <div id="mvc" class="slide" style="display:none">
+        <h2>Model-view-controller</h2>
+        <ul>
+          <li>separate the state of the GUI (<em>view</em>) from internal state (<em>model</em>)
+          <li>updates happen on model, view is derived (i.e. a function!)
+          <li>view registers <em>listener</em> with model, to be notified of changes
+        </ul>
+
+        <p>Better than nothing, but:</p>
+        <ul>
+          <li>listener spaghetti</li>
+          <li>no dependency ordering leads to update glitches</li>
+          <li>programmer must manage dynamic dependencies</li>
+          <li>high programmer overhead leads to shortcuts</li>
+          <li>inherently state-based</li>
+        </ul>
+      </div>
+
+      <div id="frp" class="slide" style="display:none">
+        <h2>Functional reactive programming</h2>
+
+        <p>a more abstract take on MVC:
+        <ul>
+          <li>don't register a listener, depend on a value</li>
+          <li>framework updates dependencies in glitch-free order</li>
+          <li>framework manages dynamic dependencies</li>
+          <li>low programmer overhead</li>
+          <li>implementation is state-based, interface is (mostly) pure</li>
+        </ul>
+      </div>
+
+      <div id="ocaml_etc" class="slide" style="display:none">
+        <h2>OCaml, ocamljs, froc, froc-dom</h2>
+        <ul>
+          <li>OCaml is a programming language</li>
+          <li>ocamljs compiles OCaml to Javascript</li>
+          <li>froc is an FRP library written in OCaml</li>
+          <li>froc-dom connects froc to browsers</li>
+        </ul>
+      </div>
+
+      <div id="frp_events" class="slide" style="display:none">
+        <h2>FRP events</h2>
+        <ul>
+          <li>first-class event streams, separate from source:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">button </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Dom</span>.document<span class="tuareg-font-lock-operator">#</span>getElementById <span class="string">"button"</span> <span class="tuareg-font-lock-governing">in</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">clicks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc_dom</span>.clicks button <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+</pre>
+          </li>
+          <li>build derived event streams without explicit callbacks:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">clicks2 </span><span class="tuareg-font-lock-operator">=</span>
+  <span class="type">Froc</span>.merge <span class="tuareg-font-lock-operator">[</span> <span class="type">Froc_dom</span>.clicks button1<span class="tuareg-font-lock-operator">;</span> <span class="type">Froc_dom</span>.clicks button2 <span class="tuareg-font-lock-operator">]</span>
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">shift_clicks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.filter <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">e </span><span class="tuareg-font-lock-operator">-&gt;</span> e<span class="tuareg-font-lock-operator">#</span>_get_shiftKey<span class="tuareg-font-lock-operator">)</span> clicks
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">num_clicks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.collect <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">c _ </span><span class="tuareg-font-lock-operator">-&gt;</span> c <span class="tuareg-font-lock-operator">+</span> 1<span class="tuareg-font-lock-operator">)</span> 0 clicks
+</pre>
+          </li>
+        </ul>
+      </div>
+
+      <div id="frp_behaviors" class="slide" style="display:none">
+        <h2>FRP behaviors</h2>
+        <ul>
+          <li>first-class changeable values, separate from source:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">input </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Dom</span>.document<span class="tuareg-font-lock-operator">#</span>getElementById <span class="string">"input"</span> <span class="tuareg-font-lock-governing">in</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">value </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc_dom</span>.input_value_b input <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+</pre>
+          </li>
+          <li>dependents are recomputed when behavior changes:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">int_value </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.lift int_of_string value <span class="tuareg-font-lock-governing">in</span>
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">double_value </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.lift <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">x </span><span class="tuareg-font-lock-operator">-&gt;</span> x <span class="tuareg-font-lock-operator">+</span> x<span class="tuareg-font-lock-operator">)</span> int_value
+</pre>
+          </li>
+          <li>glitch-free update:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">triple_value </span><span class="tuareg-font-lock-operator">=</span>
+  <span class="type">Froc</span>.lift2 <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">x y </span><span class="tuareg-font-lock-operator">-&gt;</span> x <span class="tuareg-font-lock-operator">+</span> y<span class="tuareg-font-lock-operator">)</span> int_value double_value
+</pre>
+          </li>
+        </ul>
+      </div>
+
+      <div id="dyn_deps" class="slide" style="display:none">
+        <h2>Dynamic dependencies</h2>
+      </div>
+
+      <div id="output" class="slide" style="display:none">
+        <h2>Producing output</h2>
+
+        <p>To do something with an event or behavior:</p>
+    <pre>
+<span class="type">Froc</span>.notify_b fontSize <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">s </span><span class="tuareg-font-lock-operator">-&gt;</span> e<span class="tuareg-font-lock-operator">#</span>_get_style<span class="tuareg-font-lock-operator">#</span>_set_fontSize s<span class="tuareg-font-lock-operator">);</span>
+
+<span class="type">Froc_dom</span>.attach_fontSize_b e fontSize<span class="tuareg-font-lock-operator">;</span>
+</pre>
+        <p>"Hey, wait, that's just a listener!"</p>
+
+        <p>Yes, but:</p>
+        <ul>
+          <li>you only need them at the edge of the graph</li>
+          <li>dynamic dependencies are handled for you</li>
+          <li>alternative: build a value representing the UI, draw it all at once</li>
+          <li>at the end of the day you have to side-effect the screen
+        </ul>
+
+      </div>
+
+      <div id="implementation" class="slide" style="display:none">
+        <h2>Implementation</h2>
+
+        <ul>
+          <li>bunch of listeners :)</li>
+          <li>nodes in dep graph assigned abstract timestamp at eval</li>
+          <li>notifications sent in timestamp order w/ priority queue</li>
+          <li>dependent functions delimit timestamp range;
+          <li>timestamp ranges cleaned up (to unregister dyn deps etc.)
+        </ul>
+        <p>more at</p>
+        <p><a href="http://ambassadortothecomputers.blogspot.com/2010/05/how-froc-works.html">ambassadortothecomputers.blogspot.com/2010/05/how-froc-works.html</a></p>
+      </div>
+
+      <div id="why_ocaml" class="slide" style="display:none">
+        <h2>Why OCaml for FRP?</h2>
+
+        <p>Claim: OCaml is a sweet-spot for FRP</p>
+        <ul>
+          <li>value-oriented mindset</li>
+          <li>higher-order functions</li>
+          <li>static typing...</li>
+          <li>...but types usually inferred</li>
+          <li>imperative implementation possible</li>
+        </ul>
+
+        <p>Nonetheless there are FRP impls in many languages:</p>
+        <ul>
+          <li>Scheme (<a href="http://www.cs.brown.edu/~greg/">FrTime</a>), Javascript (<a href="http://www.flapjax-lang.org/">Flapjax</a>)</li>
+          <li>Haskell (<a href="http://conal.net/fran/">Fran</a> and many descendents)</li>
+          <li>Scala (<a href="http://lamp.epfl.ch/~imaier/">Scala.React</a>), even Lua (<a href="http://www.lua.inf.puc-rio.br/luagravity/">LuaGravity</a>)</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div id="nav" style="display:none">
+      <span id="nav_page_num">0</span> / <span id="nav_page_total"></span>
+    </div>
+  </body>
+</html>
