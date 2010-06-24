@@ -90,10 +90,6 @@ let mouse_e () =
 
 let mouse_b () = hold (0, 0) (mouse_e ())
 
-let attach_innerHTML elem b =
-  let e = changes b in
-  notify_e e (fun s -> elem#_set_innerHTML s)
-
 let input_value_e input =
   let e, s = make_event () in
   let f _ = send s input#_get_value in
@@ -103,13 +99,20 @@ let input_value_e input =
 
 let input_value_b input = hold input#_get_value (input_value_e input)
 
-let attach_input_value_e i e = notify_e e (fun v -> i#_set_value v)
+let attach_innerHTML_e el e = notify_e e (fun s -> el#_set_innerHTML s)
+let attach_innerHTML_b el b = notify_b b (fun s -> el#_set_innerHTML s)
 
-let attach_input_value_b i b = attach_input_value_e i (changes b)
+let attach_input_value_e i e = notify_e e (fun v -> i#_set_value v)
+let attach_input_value_b i b = notify_b b (fun v -> i#_set_value v)
 
 let attach_backgroundColor_e el e = notify_e e (fun v -> el#_get_style#_set_backgroundColor v)
+let attach_backgroundColor_b el b = notify_b b (fun v -> el#_get_style#_set_backgroundColor v)
 
-let attach_backgroundColor_b el b = attach_backgroundColor_e el (changes b)
+let attach_display_e el e = notify_e e (fun v -> el#_get_style#_set_display v)
+let attach_display_b el b = notify_b b (fun v -> el#_get_style#_set_display v)
+
+let attach_fontSize_e el e = notify_e e (fun v -> el#_get_style#_set_fontSize v)
+let attach_fontSize_b el b = notify_b b (fun v -> el#_get_style#_set_fontSize v)
 
 let node_of_result = function
   | Value v -> (v :> Dom.node)
@@ -141,9 +144,25 @@ let replaceNode n nb =
     old := c in
   notify_result_b nb update
 
-let clicks (elem : #Dom.element) =
+let event name (elem : #Dom.element) =
   let e, s = make_event () in
-  let f ev = ev#preventDefault; send s () in
-  elem#addEventListener "click" f false;
-  cleanup (fun () -> elem#removeEventListener "click" f false);
+  let f = send s in
+  elem#addEventListener name f false;
+  cleanup (fun () -> elem#removeEventListener name f false);
   e
+
+let mouseEvent name (elem : #Dom.element) =
+  let e, s = make_event () in
+  let f = send s in
+  elem#addEventListener_mouseEvent_ name f false;
+  cleanup (fun () -> elem#removeEventListener_mouseEvent_ name f false);
+  e
+
+let keyEvent name (elem : #Dom.element) =
+  let e, s = make_event () in
+  let f = send s in
+  elem#addEventListener_keyEvent_ name f false;
+  cleanup (fun () -> elem#removeEventListener_keyEvent_ name f false);
+  e
+
+let clicks (elem : #Dom.element) = event "click" elem

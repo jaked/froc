@@ -205,9 +205,9 @@ let onload () =
 
   let clicks =
     F.merge [
-      F.map (fun () -> `Stationary) (Fd.clicks (get "stationary"));
-      F.map (fun () -> `Bouncing) (Fd.clicks (get "bouncing"));
-      F.map (fun () -> `Remove) (Fd.clicks (get "remove"));
+      F.map (fun _ -> `Stationary) (Fd.clicks (get "stationary"));
+      F.map (fun _ -> `Bouncing) (Fd.clicks (get "bouncing"));
+      F.map (fun _ -> `Remove) (Fd.clicks (get "remove"));
     ] in
 
   let points : (float * float * Fda.color) L.t =

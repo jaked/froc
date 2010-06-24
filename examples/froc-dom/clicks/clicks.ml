@@ -8,15 +8,15 @@ let onload () =
   let clicks = F.count (Fd.clicks (D.document#getElementById "click")) in
   let ticks = F.count (Fd.ticks 1000.) in
 
-  Fd.attach_innerHTML
+  Fd.attach_innerHTML_b
     (D.document#getElementById "clicks")
     (clicks >>= fun c -> F.return (string_of_int c));
 
-  Fd.attach_innerHTML
+  Fd.attach_innerHTML_b
     (D.document#getElementById "seconds")
     (ticks >>= fun s -> F.return (string_of_int s));
 
-  Fd.attach_innerHTML
+  Fd.attach_innerHTML_b
     (D.document#getElementById "difference")
     (F.bind2
         clicks ticks
