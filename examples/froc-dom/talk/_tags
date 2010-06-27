@@ -1,2 +1,2 @@
-<talk.ml> : pkg_froc-dom,pkg_javascript,syntax_camlp4o,pkg_camlp4.macro
+<talk.ml> : syntax_camlp4o,pkg_jslib.inline,pkg_ocamljs,pkg_froc-dom,pkg_javascript,syntax_camlp4o,pkg_camlp4.macro
 <talk.js> : pkg_froc-dom,pkg_javascript

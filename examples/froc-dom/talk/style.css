@@ -1,3 +1,7 @@
+h1 {
+  font-size: 64px;
+}
+
 .slide {
   font-size: 32px;
 }
@@ -42,7 +46,7 @@
 #title_email {
   position: absolute;
   left: 400px;
-  top: 600px;
+  top: 650px;
 }
 
 li {
@@ -51,6 +55,8 @@ li {
 
 /* htmlize stuff */
 .comment {
+  /* font-lock-comment-delimiter-face */
+  color: #cd0000;
 }
 .comment-delimiter {
   /* font-lock-comment-delimiter-face */
