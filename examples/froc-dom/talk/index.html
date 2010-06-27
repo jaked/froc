@@ -1,0 +1,394 @@
+<html>
+  <head>
+    <link type="text/css" rel="stylesheet" href="style.css" />
+    <script src="talk.js"></script>
+  </head>
+
+  <body>
+    <div id="slides">
+
+      <div id="title" class="center">
+        <h1 id="title_title">Better Web GUIs<br/>with<br/>Functional Reactive Programming</h1>
+
+        <h2 id="title_email">jake@donham.org</h2>
+      </div>
+
+      <div id="gui_hard" class="slide" style="display:none">
+        <h2>GUIs are hard!</h2>
+
+        <p>Typical GUI impl consists of</p>
+        <ul>
+          <li>state</li>
+          <li>events</li>
+          <li>callbacks</li>
+        </ul>
+
+        <p>Problems:</p>
+        <ul>
+          <li>unmodular: callback soup, control inversion</li>
+          <li>state + concurrency = pain (order matters)</li>
+        </ul>
+
+        <p>Adobe: 1/3 code and 1/2 bugs due to event handling</p>
+      </div>
+
+      <div id="gui_not_hard" class="slide" style="display:none">
+        <h2>GUIs should not be hard!</h2>
+
+        <p>Typical GUI represents a <em>thing</em></p>
+        <ul>
+          <li>internal model of the thing</li>
+          <li>input events control model</li>
+          <li>render view of thing from model</li>
+        </ul>
+
+        <p>Elements of functional programming:</p>
+        <ul>
+          <li>view is a pure function of model
+          <li>model is a pure function of events?
+        </ul>
+      </div>
+
+      <div id="mvc" class="slide" style="display:none">
+        <h2>Model-view-controller pattern</h2>
+        <ul>
+          <li>separate modules/classes for model, view, controller</li>
+          <li>view registers callbacks with model, controller fires events on model</li>
+        </ul>
+
+        <p>Better, but:</p>
+        <ul>
+          <li>no dependency ordering leads to update glitches</li>
+          <li>programmer must manage dynamic dependencies</li>
+          <li>still: callback soup, state + concurrency</li>
+        </ul>
+
+        <p>And:</p>
+        <ul>
+          <li>still too concrete / coupled (want MMM...MMMVC?)</li>
+          <li>high programmer overhead leads to shortcuts</li>
+        </ul>
+      </div>
+
+      <div id="frp" class="slide" style="display:none">
+        <h2>Functional reactive programming</h2>
+
+        <p>Slogan:<p>
+        <p style="margin-left: 250px"><b>Dependencies not callbacks!</b></p>
+        <br/>
+
+        <p>a more abstract take on MVC:
+        <ul>
+          <li>functional dependencies replace callbacks and state</li>
+          <li>framework updates dependencies in glitch-free order</li>
+          <li>framework manages dynamic dependencies</li>
+          <li>abstract, decoupled, low programmer overhead</li>
+          <li>implementation is state-based, interface is (mostly) pure</li>
+        </ul>
+      </div>
+
+      <div id="ocaml_etc" class="slide" style="display:none">
+        <h2>OCaml, ocamljs, froc, froc-dom</h2>
+        <ul>
+          <li>OCaml: a programming language</li>
+          <li>ocamljs: compiles OCaml to Javascript</li>
+          <li>froc: functional reactive programming library (in OCaml)</li>
+          <li>froc-dom: connects froc to browser DOM</li>
+        </ul>
+      </div>
+
+      <div id="frp_behaviors" class="slide" style="display:none">
+        <h2>FRP behaviors</h2>
+        <ul>
+          <li>first-class changeable values, separate from source:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">input </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Dom</span>.document<span class="tuareg-font-lock-operator">#</span>getElementById <span class="string">"input"</span> <span class="tuareg-font-lock-governing">in</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">value </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc_dom</span>.input_value_b input <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+</pre>
+          </li>
+          <li>derived behaviors are recomputed when dependencies change:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">int_value </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.lift int_of_string value <span class="tuareg-font-lock-governing">in</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">double_value </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.lift <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">x </span><span class="tuareg-font-lock-operator">-&gt;</span> x <span class="tuareg-font-lock-operator">+</span> x<span class="tuareg-font-lock-operator">)</span> int_value
+</pre>
+          </li>
+          <li>glitch-free update:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">triple_value </span><span class="tuareg-font-lock-operator">=</span>
+  <span class="type">Froc</span>.lift2 <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">x y </span><span class="tuareg-font-lock-operator">-&gt;</span> x <span class="tuareg-font-lock-operator">+</span> y<span class="tuareg-font-lock-operator">)</span> int_value double_value
+</pre>
+          </li>
+        </ul>
+      </div>
+
+      <div id="frp_events" class="slide" style="display:none">
+        <h2>FRP events</h2>
+        <ul>
+          <li>first-class event streams, separate from source:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">button </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Dom</span>.document<span class="tuareg-font-lock-operator">#</span>getElementById <span class="string">"button"</span> <span class="tuareg-font-lock-governing">in</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">clicks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc_dom</span>.clicks button <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+</pre>
+          </li>
+          <li>build derived event streams without explicit callbacks:
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">clicks2 </span><span class="tuareg-font-lock-operator">=</span>
+  <span class="type">Froc</span>.merge <span class="tuareg-font-lock-operator">[</span> <span class="type">Froc_dom</span>.clicks button1<span class="tuareg-font-lock-operator">;</span> <span class="type">Froc_dom</span>.clicks button2 <span class="tuareg-font-lock-operator">]</span>
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">shift_clicks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.filter <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">e </span><span class="tuareg-font-lock-operator">-&gt;</span> e<span class="tuareg-font-lock-operator">#</span>_get_shiftKey<span class="tuareg-font-lock-operator">)</span> clicks
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">num_clicks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.collect <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">c _ </span><span class="tuareg-font-lock-operator">-&gt;</span> c <span class="tuareg-font-lock-operator">+</span> 1<span class="tuareg-font-lock-operator">)</span> 0 clicks
+</pre>
+          </li>
+
+          <li>make event from behavior and behavior from event
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">e </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.changes b <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">e </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.when_true b <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">b </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.hold e init <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+</pre>
+          </li>
+        </ul>
+      </div>
+
+      <div id="output" class="slide" style="display:none">
+        <h2>Notifications</h2>
+
+        <p>To do something with an event or behavior:</p>
+    <pre>
+<span class="type">Froc</span>.notify_b fontSize <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">s </span><span class="tuareg-font-lock-operator">-&gt;</span> e<span class="tuareg-font-lock-operator">#</span>_get_style<span class="tuareg-font-lock-operator">#</span>_set_fontSize s<span class="tuareg-font-lock-operator">);</span>
+</pre>
+        <p>"Hey, wait, that's just a callback!"</p>
+
+        <p>Yes, but:</p>
+        <ul>
+          <li>you only need them at the edge of the graph</li>
+          <li>dynamic dependencies are handled for you</li>
+          <li>alternative: build a value representing whole UI, draw it on changes</li>
+          <li>at the end of the day you have to side-effect the screen
+        </ul>
+      </div>
+
+      <div id="dyn_deps" class="slide" style="display:none">
+        <h2>Dynamic dependencies</h2>
+
+        <ul>
+          <li>control flow depends on values</li>
+          <li>computation of values depends on control</li>
+        </ul>
+
+        <p>For example:</p>
+    <pre>
+<span class="comment">(* let y = if x = 0 then 0 else 100 / x *)</span>
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">x </span><span class="tuareg-font-lock-operator">=</span> <span class="tuareg-font-lock-operator">...</span> <span class="tuareg-font-lock-governing">in</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">b </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.lift <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">x </span><span class="tuareg-font-lock-operator">-&gt;</span> x <span class="tuareg-font-lock-operator">=</span> 0<span class="tuareg-font-lock-operator">)</span> x <span class="tuareg-font-lock-governing">in</span>
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">y </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.bind b <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">b </span><span class="tuareg-font-lock-operator">-&gt;</span>
+                       <span class="keyword">if</span> b
+                       <span class="keyword">then</span> <span class="type">Froc</span>.return 0
+                       <span class="keyword">else</span> <span class="type">Froc</span>.lift <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">x </span><span class="tuareg-font-lock-operator">-&gt;</span> 100 <span class="tuareg-font-lock-operator">/</span> x<span class="tuareg-font-lock-operator">)</span> x<span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">...</span>
+</pre>
+        <p>Types:</p>
+<pre>
+<span class="tuareg-font-lock-governing">val</span> <span class="variable-name">lift </span><span class="tuareg-font-lock-operator">:</span> <span class="tuareg-font-lock-operator">('</span><span class="type">a </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">b</span><span class="tuareg-font-lock-operator">)</span><span class="type"> </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">a behavior </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">b behavior</span>
+<span class="tuareg-font-lock-governing">val</span> <span class="variable-name">bind </span><span class="tuareg-font-lock-operator">:</span> <span class="tuareg-font-lock-operator">'</span><span class="type">a behavior </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">('</span><span class="type">a </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">b behavior</span><span class="tuareg-font-lock-operator">)</span><span class="type"> </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">b behavior</span>
+<span class="tuareg-font-lock-governing">val</span> <span class="variable-name">return </span><span class="tuareg-font-lock-operator">:</span> <span class="tuareg-font-lock-operator">'</span><span class="type">a </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">a behavior</span>
+</pre>
+      </div>
+
+      <div id="clicks" class="slide" style="display:none">
+        <h2>Example: Clicks</h2>
+
+        <p><button type="button" id="clicks_click">Click</button></p>
+        <p><span id="clicks_seconds">0</span> seconds have elapsed.</p>
+        <p>The button has been clicked <span id="clicks_clicks">0</span> times.</p>
+        <p><span id="clicks_difference"></span></p>
+      </div>
+
+      <div id="clicks_src" class="slide" style="display:none">
+        <h2>Example: Clicks source</h2>
+
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="function-name">elem</span><span class="variable-name"> id </span><span class="tuareg-font-lock-operator">=</span> <span class="type">D</span>.document<span class="tuareg-font-lock-operator">#</span>getElementById id <span class="tuareg-font-lock-governing">in</span>
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">clicks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">F</span>.count <span class="tuareg-font-lock-operator">(</span><span class="type">Fd</span>.clicks <span class="tuareg-font-lock-operator">(</span>elem <span class="string">"click"</span><span class="tuareg-font-lock-operator">))</span> <span class="tuareg-font-lock-governing">in</span>
+
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">ticks </span><span class="tuareg-font-lock-operator">=</span> <span class="type">F</span>.count <span class="tuareg-font-lock-operator">(</span><span class="type">Fd</span>.ticks 1000.<span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-governing">in</span>
+
+<span class="type">Fd</span>.attach_innerHTML_b <span class="tuareg-font-lock-operator">(</span>elem <span class="string">"clicks"</span><span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.lift string_of_int clicks<span class="tuareg-font-lock-operator">);</span>
+
+<span class="type">Fd</span>.attach_innerHTML_b <span class="tuareg-font-lock-operator">(</span>elem <span class="string">"seconds"</span><span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.lift string_of_int ticks<span class="tuareg-font-lock-operator">);</span>
+
+<span class="type">Fd</span>.attach_innerHTML_b <span class="tuareg-font-lock-operator">(</span>elem <span class="string">"difference"</span><span class="tuareg-font-lock-operator">)</span>
+  <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.lift2
+     <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">clicks ticks </span><span class="tuareg-font-lock-operator">-&gt;</span>
+        <span class="keyword">if</span> clicks <span class="tuareg-font-lock-operator">=</span> ticks
+        <span class="keyword">then</span> <span class="string">"same number of clicks as ticks"</span>
+        <span class="keyword">else</span> <span class="keyword">if</span> clicks <span class="tuareg-font-lock-operator">&gt;</span> ticks
+        <span class="keyword">then</span> string_of_int <span class="tuareg-font-lock-operator">(</span>clicks <span class="tuareg-font-lock-operator">-</span> ticks<span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-operator">^</span> <span class="string">" more clicks than ticks"</span>
+        <span class="keyword">else</span> string_of_int <span class="tuareg-font-lock-operator">(</span>ticks <span class="tuareg-font-lock-operator">-</span> clicks<span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-operator">^</span> <span class="string">" more ticks than clicks"</span><span class="tuareg-font-lock-operator">)</span>
+     clicks ticks<span class="tuareg-font-lock-operator">)</span>
+</pre>
+      </div>
+
+      <div id="sudoku" class="slide" style="display:none">
+        <h2>Example: Sudoku</h2>
+        <div id="sudoku_board"></div>
+      </div>
+
+      <div id="sudoku_src" class="slide" style="display:none">
+        <h2>Example: Sudoku source</h2>
+
+    <pre>
+<span class="tuareg-font-lock-governing">let</span> <span class="function-name">adjacents</span><span class="variable-name"> i j </span><span class="tuareg-font-lock-operator">=</span>
+  <span class="tuareg-font-lock-governing">let</span> <span class="function-name">adj</span><span class="variable-name"> i</span><span class="tuareg-font-lock-operator">'</span><span class="variable-name"> j</span><span class="tuareg-font-lock-operator">'</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">=</span>
+    <span class="tuareg-font-lock-operator">(</span>i<span class="tuareg-font-lock-operator">'</span> <span class="tuareg-font-lock-operator">&lt;&gt;</span> i <span class="tuareg-font-lock-operator">||</span> j<span class="tuareg-font-lock-operator">'</span> <span class="tuareg-font-lock-operator">&lt;&gt;</span> j<span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-operator">&amp;&amp;</span>
+      <span class="tuareg-font-lock-operator">(</span>i<span class="tuareg-font-lock-operator">'</span> <span class="tuareg-font-lock-operator">=</span> i <span class="tuareg-font-lock-operator">or</span> j<span class="tuareg-font-lock-operator">'</span> <span class="tuareg-font-lock-operator">=</span> j <span class="tuareg-font-lock-operator">or</span>
+          <span class="tuareg-font-lock-operator">(</span>i<span class="tuareg-font-lock-operator">'</span> <span class="tuareg-font-lock-operator">/</span> 3 <span class="tuareg-font-lock-operator">=</span> i <span class="tuareg-font-lock-operator">/</span> 3 <span class="tuareg-font-lock-operator">&amp;&amp;</span> j<span class="tuareg-font-lock-operator">'</span> <span class="tuareg-font-lock-operator">/</span> 3 <span class="tuareg-font-lock-operator">=</span> j <span class="tuareg-font-lock-operator">/</span> 3<span class="tuareg-font-lock-operator">))</span> <span class="tuareg-font-lock-governing">in</span>
+  foldi <span class="tuareg-font-lock-operator">[]</span> rows <span class="tuareg-font-lock-governing">begin</span> <span class="keyword">fun</span> <span class="variable-name">i</span><span class="tuareg-font-lock-operator">'</span><span class="variable-name"> adjs row </span><span class="tuareg-font-lock-operator">-&gt;</span>
+    foldi adjs row <span class="tuareg-font-lock-governing">begin</span> <span class="keyword">fun</span> <span class="variable-name">j</span><span class="tuareg-font-lock-operator">'</span><span class="variable-name"> adjs </span><span class="tuareg-font-lock-operator">(</span><span class="variable-name">cell</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name">_</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name">_</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">-&gt;</span>
+      <span class="keyword">if</span> adj i<span class="tuareg-font-lock-operator">'</span> j<span class="tuareg-font-lock-operator">'</span>
+      <span class="keyword">then</span> cell<span class="tuareg-font-lock-operator">::</span>adjs
+      <span class="keyword">else</span> adjs
+    <span class="tuareg-font-lock-governing">end</span>
+  <span class="tuareg-font-lock-governing">end</span>
+
+<span class="type">ArrayLabels</span>.iteri rows <span class="tuareg-font-lock-operator">~</span><span class="variable-name">f</span><span class="tuareg-font-lock-operator">:</span><span class="tuareg-font-lock-governing">begin</span><span class="type"> </span><span class="keyword">fun</span><span class="type"> </span><span class="variable-name">i row </span><span class="tuareg-font-lock-operator">-&gt;</span>
+  <span class="type">ArrayLabels</span>.iteri row <span class="tuareg-font-lock-operator">~</span><span class="variable-name">f</span><span class="tuareg-font-lock-operator">:</span><span class="tuareg-font-lock-governing">begin</span><span class="type"> </span><span class="keyword">fun</span><span class="type"> </span><span class="variable-name">j </span><span class="tuareg-font-lock-operator">(</span><span class="variable-name">cell</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> _</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> input</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">-&gt;</span>
+    <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">adjs </span><span class="tuareg-font-lock-operator">=</span> adjacents i j <span class="tuareg-font-lock-governing">in</span>
+    <span class="type">Fd</span>.attach_backgroundColor_b input
+      <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.bindN adjs <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">adjs </span><span class="tuareg-font-lock-operator">-&gt;</span>
+         <span class="type">F</span>.lift
+           <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">v </span><span class="tuareg-font-lock-operator">-&gt;</span>
+              <span class="keyword">if</span> v <span class="tuareg-font-lock-operator">&lt;&gt;</span> None <span class="tuareg-font-lock-operator">&amp;&amp;</span> <span class="type">List</span>.mem v adjs
+              <span class="keyword">then</span> <span class="string">"#ff0000"</span>
+              <span class="keyword">else</span> <span class="string">"#ffffff"</span><span class="tuareg-font-lock-operator">)</span>
+           cell<span class="tuareg-font-lock-operator">))</span>
+  <span class="tuareg-font-lock-governing">end</span>
+<span class="tuareg-font-lock-governing">end</span>
+</pre>
+      </div>
+
+      <div id="bounce" class="slide" style="display:none">
+        <h2>Example: Bounce</h2>
+
+        <canvas id="bounce_canvas" width="500" height="500" style="border-style:solid"></canvas>
+      </div>
+
+      <div id="bounce_src" class="slide" style="display:none">
+        <h2>Example: Bounce source</h2>
+
+    <pre style="font-size: 16px">
+<span class="tuareg-font-lock-governing">let</span> <span class="variable-name">ball_point </span><span class="tuareg-font-lock-operator">=</span>
+  <span class="type">F</span>.fix_b <span class="tuareg-font-lock-governing">begin</span> <span class="keyword">fun</span> <span class="variable-name">bp </span><span class="tuareg-font-lock-operator">-&gt;</span>
+    <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">x_out_of_bounds </span><span class="tuareg-font-lock-operator">=</span>
+      <span class="type">F</span>.map
+        <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="tuareg-font-lock-operator">()</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">-&gt;</span> `X_bounds<span class="tuareg-font-lock-operator">)</span>
+        <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.when_true
+           <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.lift <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="tuareg-font-lock-operator">(</span><span class="variable-name">x</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> _</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">-&gt;</span> x <span class="tuareg-font-lock-operator">&lt;=</span> min <span class="tuareg-font-lock-operator">||</span> x <span class="tuareg-font-lock-operator">&gt;=</span> max<span class="tuareg-font-lock-operator">)</span> bp<span class="tuareg-font-lock-operator">))</span> <span class="tuareg-font-lock-governing">in</span>
+    <span class="tuareg-font-lock-operator">...</span>
+    <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">v </span><span class="tuareg-font-lock-operator">=</span>
+      <span class="type">F</span>.fix_b <span class="tuareg-font-lock-governing">begin</span> <span class="keyword">fun</span> <span class="variable-name">v </span><span class="tuareg-font-lock-operator">-&gt;</span>
+        <span class="type">F</span>.hold
+          init_v
+          <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.map
+             <span class="tuareg-font-lock-governing">begin</span> <span class="keyword">fun</span> <span class="variable-name">e </span><span class="tuareg-font-lock-operator">-&gt;</span>
+               <span class="tuareg-font-lock-governing">let</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">(</span><span class="variable-name">vx</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> vy</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">=</span> <span class="type">F</span>.sample v <span class="tuareg-font-lock-governing">in</span>
+               <span class="tuareg-font-lock-governing">let</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">(</span><span class="variable-name">x</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> y</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">=</span> <span class="type">F</span>.sample bp <span class="tuareg-font-lock-governing">in</span>
+               <span class="keyword">match</span> e <span class="keyword">with</span>
+                 <span class="tuareg-font-lock-operator">|</span> `X_bounds <span class="tuareg-font-lock-operator">-&gt;</span> <span class="tuareg-font-lock-operator">(-.</span>vx<span class="tuareg-font-lock-operator">,</span> vy<span class="tuareg-font-lock-operator">)</span>
+                 <span class="tuareg-font-lock-operator">|</span> `Y_bounds <span class="tuareg-font-lock-operator">-&gt;</span> <span class="tuareg-font-lock-operator">(</span>vx<span class="tuareg-font-lock-operator">,</span> <span class="tuareg-font-lock-operator">-.</span>vy<span class="tuareg-font-lock-operator">)</span>
+                 <span class="tuareg-font-lock-operator">|</span> `Xy_bounds <span class="tuareg-font-lock-operator">-&gt;</span> <span class="tuareg-font-lock-operator">(-.</span>vx<span class="tuareg-font-lock-operator">,</span> <span class="tuareg-font-lock-operator">-.</span>vy<span class="tuareg-font-lock-operator">)</span>
+                 <span class="tuareg-font-lock-operator">|</span> `Paddle <span class="tuareg-font-lock-operator">-&gt;</span>
+                     <span class="tuareg-font-lock-governing">let</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">(</span><span class="variable-name">px</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> py</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">=</span> <span class="type">F</span>.sample paddle_point <span class="tuareg-font-lock-governing">in</span>
+                     <span class="comment">(* bounce v off the tangent to the paddle *)</span>
+                     <span class="tuareg-font-lock-operator">...</span>
+             <span class="tuareg-font-lock-governing">end</span>
+             <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.merge <span class="tuareg-font-lock-operator">[</span> xy_out_of_bounds<span class="tuareg-font-lock-operator">;</span> x_out_of_bounds<span class="tuareg-font-lock-operator">;</span> y_out_of_bounds<span class="tuareg-font-lock-operator">;</span> hit_paddle <span class="tuareg-font-lock-operator">]))</span>
+      <span class="tuareg-font-lock-governing">end</span> <span class="tuareg-font-lock-governing">in</span>
+  
+    <span class="type">F</span>.hold init_p
+      <span class="tuareg-font-lock-operator">(</span><span class="type">F</span>.collect
+         <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="tuareg-font-lock-operator">(</span><span class="variable-name">x</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> y</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">()</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">-&gt;</span> <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">vx</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> vy </span><span class="tuareg-font-lock-operator">=</span> <span class="type">F</span>.sample v <span class="tuareg-font-lock-governing">in</span> <span class="tuareg-font-lock-operator">(</span>x <span class="tuareg-font-lock-operator">+.</span> vx<span class="tuareg-font-lock-operator">,</span> y <span class="tuareg-font-lock-operator">+.</span> vy<span class="tuareg-font-lock-operator">))</span>
+         init_p
+         <span class="tuareg-font-lock-operator">(</span><span class="type">Fd</span>.ticks 20.<span class="tuareg-font-lock-operator">))</span>
+</pre>
+      </div>
+
+      <div id="implementation" class="slide" style="display:none">
+        <h2>Implementation</h2>
+
+        <ul>
+          <li>bunch of callbacks :)</li>
+          <li>nodes in dep graph assigned abstract timestamp at eval</li>
+          <li>notifications sent in timestamp order w/ priority queue</li>
+          <li>dependent functions delimit timestamp range;
+          <li>timestamp ranges cleaned up (to unregister dyn deps etc.)
+        </ul>
+        <p>more at</p>
+        <p><a href="http://ambassadortothecomputers.blogspot.com/2010/05/how-froc-works.html">ambassadortothecomputers.blogspot.com/2010/05/how-froc-works.html</a></p>
+      </div>
+
+      <div id="why_ocaml" class="slide" style="display:none">
+        <h2>Why OCaml for FRP?</h2>
+
+        <p>OCaml is a sweet-spot for FRP:</p>
+        <ul>
+          <li>value-oriented mindset</li>
+          <li>higher-order functions</li>
+          <li>static typing...</li>
+          <li>...but types usually inferred</li>
+          <li>imperative implementation possible</li>
+        </ul>
+
+        <p>But FRP impls in many languages:</p>
+        <ul>
+          <li>Scheme (<a href="http://www.cs.brown.edu/~greg/">FrTime</a>), Javascript (<a href="http://www.flapjax-lang.org/">Flapjax</a>)</li>
+          <li>Haskell (<a href="http://conal.net/fran/">Fran</a> and many descendents)</li>
+          <li>Scala (<a href="http://lamp.epfl.ch/~imaier/">Scala.React</a>), even Lua (<a href="http://www.lua.inf.puc-rio.br/luagravity/">LuaGravity</a>)</li>
+        </ul>
+      </div>
+
+      <div id="reactive" class="slide" style="display:none">
+        <h2>FRP for reactive programming?</h2>
+
+        <p>Most programming is reactive programming (?)</p>
+        <ul>
+          <li>program is in some state</li>
+          <li>s**t happens (timer goes off, input arrives)</li>
+          <li>program reacts, changing state (and usually responding with output)</li>
+        </ul>
+
+        <p>e.g.</p>
+        <ul>
+          <li>industrial control systems</li>
+          <li>network stacks</li>
+          <li>event-driven servers</li>
+        </ul>
+
+        <p>is there a role for FRP outside of GUIs?</p>
+      </div>
+
+      <div id="thanks" class="slide" style="display:none">
+        <h2>Thanks!</h2>
+        <p>Takeaways:</p>
+        <ul>
+          <li>functional programming is important</li>
+          <li>immutable values are important</li>
+          <li>types are important</li>
+        </ul>
+
+        <p>Code:</p>
+        <ul>
+          <li><a href="http://github.com/jaked/ocamljs">http://github.com/jaked/ocamljs</a></li>
+          <li><a href="http://github.com/jaked/froc">http://github.com/jaked/froc</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div id="nav" style="display:none">
+      <span id="nav_page_num">0</span> / <span id="nav_page_total"></span>
+    </div>
+  </body>
+</html>

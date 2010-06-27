@@ -1,0 +1,102 @@
+h1 {
+  font-size: 64px;
+}
+
+.slide {
+  font-size: 32px;
+}
+
+.slide pre {
+  font-size: 20px;
+}
+
+.center {
+  height: 752px;
+  width: 1024px;
+  left: 0;
+  top: 0;
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.slide {
+  margin-left: 40px;
+}
+
+.slide h2 {
+  font-size: 64px;
+  border-bottom: solid;
+  margin-top: 0px;
+  margin-left: -40px;
+}
+
+#nav {
+  position: absolute;
+  top: 738px;
+  width: 1008px;
+  text-align: right;
+}
+
+#title em {
+  font-style: normal;
+  color: #ff00ff;
+}
+
+#title_email {
+  position: absolute;
+  left: 400px;
+  top: 650px;
+}
+
+li {
+  margin-top: 20px;
+}
+
+/* htmlize stuff */
+.comment {
+  /* font-lock-comment-delimiter-face */
+  color: #cd0000;
+}
+.comment-delimiter {
+  /* font-lock-comment-delimiter-face */
+  color: #cd0000;
+}
+.makefile-shell {
+}
+.makefile-targets {
+  /* makefile-targets */
+  color: #0000ee;
+  font-weight: bold;
+}
+.function-name {
+  /* font-lock-function-name-face */
+  color: #0000ee;
+  font-weight: bold;
+}
+.tuareg-font-lock-governing {
+  /* tuareg-font-lock-governing-face */
+  color: #0000ee;
+  font-weight: bold;
+}
+.tuareg-font-lock-operator {
+  /* tuareg-font-lock-operator-face */
+  color: #cd0000;
+}
+.type {
+  /* font-lock-type-face */
+  color: #00cd00;
+}
+.variable-name {
+  /* font-lock-variable-name-face */
+  color: #cdcd00;
+}
+.string {
+  /* font-lock-string-face */
+  color: #00cd00;
+}
+.keyword {
+  /* font-lock-keyword-face */
+  color: #00cdcd;
+  font-weight: bold;
+}
