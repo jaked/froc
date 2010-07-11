@@ -20,79 +20,97 @@ ENDIF
 
 module Util =
 struct
-  let next lst p =
-    let rec loop = function
-      | [] -> assert false
-      | [ p' ] when p = p' -> p
-      | p' :: n :: _ when p = p' -> n
-      | _ :: ps -> loop ps in
-     loop lst
+  let findi arr p =
+    let len = Array.length arr in
+    let rec loop i =
+      if i >= len then raise Not_found
+      else if arr.(i) = p then i
+      else loop (i + 1) in
+    loop 0
 
-  let prev lst p =
-    let rec loop pr ps =
-      match pr, ps with
-        | _, [] -> assert false
-        | None, p' :: _ when p = p' -> p
-        | Some pr, p' :: _ when p = p' -> pr
-        | _, pr :: ps -> loop (Some pr) ps in
-    loop None lst
+  let mem arr p =
+    try ignore (findi arr p); true
+    with Not_found -> false
 
-  let number lst p =
-    let rec loop n = function
-      | [] -> assert false
-      | p' :: _ when p = p' -> n
-      | _ :: ps -> loop (n + 1) ps in
-    loop 1 lst
+  let next arr p =
+    let len = Array.length arr in
+    let i = findi arr p in
+    let i = if i + 1 = len then i else i + 1 in
+    arr.(i)
+
+  let prev arr p =
+    let i = findi arr p in
+    let i = if i - 1 < 0 then i else i - 1 in
+    arr.(i)
+
+  let number arr p = findi arr p  + 1
 end
 
-module P =
-struct
-  let pages = [
-    "title";
-    "gui_hard";
-    "gui_not_hard";
-    "mvc";
-    "frp";
-    "ocaml_etc";
-    "frp_behaviors";
-    "frp_events";
-    "dyn_deps";
-    "output";
-    "clicks";
-    "clicks_src";
-    "sudoku";
-    "sudoku_src";
-    "bounce";
-    "bounce_src";
-    "implementation";
-    "why_ocaml";
-    "reactive";
-    "thanks";
-  ]
-
-  let next = Util.next pages
-  let prev = Util.prev pages
-  let number = Util.number pages
-end
-
-module Clicks =
+module Behaviors =
 struct
   let onload () =
-    let elem id = D.document#getElementById id in
-    let clicks = F.count (Fd.clicks (elem "clicks_click")) in
-    let ticks = F.count (Fd.ticks 1000.) in
-    Fd.attach_innerHTML_b (elem "clicks_clicks") (F.lift string_of_int clicks);
-    Fd.attach_innerHTML_b (elem "clicks_seconds") (F.lift string_of_int ticks);
-    Fd.attach_innerHTML_b
-      (elem "clicks_difference")
-      (F.lift2
-         (fun clicks ticks ->
-            if clicks = ticks
-            then "same number of clicks as ticks"
-            else if clicks > ticks
-            then string_of_int (clicks - ticks) ^ " more clicks than ticks"
-            else string_of_int (ticks - clicks) ^ " more ticks than clicks")
-         clicks ticks)
+    let input = Dom.document#getElementById "behaviors_input" in
+    let value = Froc_dom.input_value_b input in
+    let int_value = Froc.lift int_of_string value in
+    let incr = Froc.lift (fun x -> x + 1) int_value in
+    let output = Dom.document#getElementById "behaviors_output" in
+    Froc_dom.attach_innerHTML_b output
+      (Froc.catch
+         (fun () -> Froc.lift string_of_int incr)
+         (fun _ -> Froc.return ""))
+end
+
+module Glitch_free =
+struct
+  let onload () =
+    let input = Dom.document#getElementById "glitch_free_input" in
+    let value = Froc_dom.input_value_b input in
+    let x = Froc.lift int_of_string value in
+    let double = Froc.lift (fun x -> 2 * x) x in
+    let triple = Froc.lift2 (fun s d -> s + d) x double in
+    let output = Dom.document#getElementById "glitch_free_output" in
+    Froc_dom.attach_innerHTML_b output
+      (Froc.catch
+         (fun () -> Froc.lift string_of_int triple)
+         (fun _ -> Froc.return ""))
+end
+
+module Dynamic_deps =
+struct
+  let onload () =
+    let input = Dom.document#getElementById "dynamic_deps_input" in
+    let value = Froc_dom.input_value_b input in
+    let x = Froc.lift int_of_string value in
+    let b = Froc.lift (fun x -> x = 0) x in
+    let result = Froc.bind b (fun b -> if b then Froc.return 0 else Froc.lift (fun x -> 100 / x) x) in
+    let output = Dom.document#getElementById "dynamic_deps_output" in
+    Froc_dom.attach_innerHTML_b output
+      (Froc.catch
+         (fun () -> Froc.lift string_of_int result)
+         (fun _ -> Froc.return ""))
+end
+
+module Events =
+struct
+  let onload () =
+    let button1 = Dom.document#getElementById "events_button1" in
+    let clicks1 = Froc_dom.clicks button1 in
+    let count1 = Froc.count clicks1 in
+    let output1 = Dom.document#getElementById "events_output1" in
+    Froc_dom.attach_innerHTML_b output1
+      (Froc.catch
+         (fun () -> Froc.lift string_of_int count1)
+         (fun _ -> Froc.return ""));
+
+    let button2 = Dom.document#getElementById "events_button2" in
+    let clicks2 = Froc_dom.clicks button2 in
+    let shift_clicks2 = Froc.filter (fun e -> e#_get_shiftKey) clicks2 in
+    let count2 = Froc.count shift_clicks2 in
+    let output2 = Dom.document#getElementById "events_output2" in
+    Froc_dom.attach_innerHTML_b output2
+      (Froc.catch
+         (fun () -> Froc.lift string_of_int count2)
+         (fun _ -> Froc.return ""))
 end
 
 module Sudoku =
@@ -101,8 +119,16 @@ struct
 
   let (>>=) = F.(>>=)
 
+  type square = {
+    i : int;
+    j : int;
+    cell : int option F.behavior;
+    set_cell : int option -> unit;
+    input : Dom.input;
+  }
+
   let make_board () =
-    let make_input () =
+    let make_square i j =
       let input = (d#createElement "input" : D.input) in
       input#setAttribute "type" "text";
       input#_set_size 1;
@@ -112,7 +138,7 @@ struct
       style#_set_padding "0px";
       style#_set_fontSize "20px";
 
-      let (cell, set) = F.make_cell None in
+      let (cell, set_cell) = F.make_cell None in
       Fd.attach_input_value_b input
         (cell >>= function
            | None -> F.return ""
@@ -124,49 +150,10 @@ struct
              | "6" | "7" | "8" | "9"  as v -> Some (int_of_string v)
              | _ -> None)
           (Fd.input_value_e input) in
-      F.notify_e ev set;
-      (cell, set, input) in
+      F.notify_e ev set_cell;
+      { i = i; j = j; cell = cell; set_cell = set_cell; input = input; } in
 
-    let rows =
-      Array.init 9 (fun i ->
-        Array.init 9 (fun j ->
-          make_input ())) in
-
-    let foldi x a f =
-      let r = ref x in
-      for i = 0 to Array.length a - 1 do
-        r := f i !r (Array.unsafe_get a i)
-      done;
-      !r in
-
-    let adjacents i j =
-      let adj i' j' =
-        (i' <> i || j' <> j) &&
-          (i' = i or j' = j or
-              (i' / 3 = i / 3 && j' / 3 = j / 3)) in
-      foldi [] rows begin fun i' adjs row ->
-        foldi adjs row begin fun j' adjs (cell,_,_) ->
-          if adj i' j'
-          then cell::adjs
-          else adjs
-        end
-      end in
-
-    ArrayLabels.iteri rows ~f:begin fun i row ->
-      ArrayLabels.iteri row ~f:begin fun j (cell, _, input) ->
-        let adjs = adjacents i j in
-        Fd.attach_backgroundColor_b input
-          (F.bindN adjs (fun adjs ->
-             F.lift
-               (fun v ->
-                  if v <> None && List.mem v adjs
-                  then "#ff0000"
-                  else "#ffffff")
-               cell))
-      end
-    end;
-
-    let make_td i j input =
+    let make_td sq =
       let td = d#createElement "td" in
       let style = td#_get_style in
       style#_set_borderStyle "solid";
@@ -175,14 +162,14 @@ struct
         | 0 -> 2, 0 | 2 -> 1, 1 | 3 -> 1, 0
         | 5 -> 1, 1 | 6 -> 1, 0 | 8 -> 1, 2
         | _ -> 1, 0 in
-      let (top, bottom) = widths i in
-      let (left, right) = widths j in
+      let (top, bottom) = widths sq.i in
+      let (left, right) = widths sq.j in
       let px k = string_of_int k ^ "px" in
       style#_set_borderTopWidth (px top);
       style#_set_borderBottomWidth (px bottom);
       style#_set_borderLeftWidth (px left);
       style#_set_borderRightWidth (px right);
-      ignore (td#appendChild input);
+      ignore (td#appendChild sq.input);
       td in
 
     let table = d#createElement "table" in
@@ -190,32 +177,56 @@ struct
     table#setAttribute "cellspacing" "0px";
     let tbody = d#createElement "tbody" in
     ignore (table#appendChild tbody);
-    ArrayLabels.iteri rows ~f:(fun i row ->
-      let tr = d#createElement "tr" in
-      ArrayLabels.iteri row ~f:(fun j (_,_,input) ->
-        let td = make_td i j input in
-        ignore (tr#appendChild td));
-      ignore (tbody#appendChild tr));
 
-    (rows, table)
+    let squares =
+      let squares = ref [] in
+      for i = 0 to 8 do
+        let tr = d#createElement "tr" in
+        ignore (tbody#appendChild tr);
+        for j = 0 to 8 do
+          let sq = make_square i j in
+          let td = make_td sq in
+          ignore (tr#appendChild td);
+          squares := sq :: !squares
+        done
+      done;
+      !squares in
 
-  let get_board rows =
-    ArrayLabels.iter rows ~f:(fun row ->
-      ArrayLabels.iter row ~f:(fun (_,set,_) ->
-        set None));
+    let adjacents { i = i; j = j } =
+      let adjacent { i = i'; j = j' } =
+        (not (i' = i && j' = j)) &&
+          (i' = i || j' = j ||
+              (i' / 3 = i / 3 && j' / 3 = j / 3)) in
+      List.map (fun sq -> sq.cell) (List.filter adjacent squares) in
+
+    List.iter
+      (fun sq ->
+         let backgroundColor =
+           F.bindN (adjacents sq)
+             (fun adjs ->
+                F.lift
+                  (fun v ->
+                     if v <> None && List.mem v adjs
+                     then "#ff0000"
+                     else "#ffffff")
+                  sq.cell) in
+         Fd.attach_backgroundColor_b sq.input backgroundColor)
+      squares;
+
+    (squares, table)
+
+  let get_board squares =
     let board = << [[[5], 0, 0, [6], [4], 0, [9], 0, [8]], [0, 0, [2], 0, 0, 0, 0, 0, 0], [[9], 0, 0, 0, 0, [2], 0, 0, 0], [[8], 0, 0, [3], [2], 0, 0, [1], 0], [0, [4], 0, [1], 0, [5], 0, [8], 0], [0, [6], 0, 0, [7], [8], 0, 0, [5]], [0, 0, 0, [2], 0, 0, 0, 0, [9]], [0, 0, 0, 0, 0, 0, [7], 0, 0], [[3], 0, [4], 0, [8], [9], 0, 0, [6]]] >> in
-    for i = 0 to 8 do
-      for j = 0 to 8 do
-        let (_,set,input) = rows.(i).(j) in
-        let v = board.(i).(j) in
-        input#_set_disabled (v <> None);
-        set v;
-      done
-    done
+    List.iter
+      (fun sq ->
+        let v = board.(sq.i).(sq.j) in
+        sq.input#_set_disabled (v <> None);
+        sq.set_cell v)
+      squares
 
   let onload () =
-    let (rows, table) = make_board () in
-    get_board rows;
+    let (squares, table) = make_board () in
+    get_board squares;
     let board = d#getElementById "sudoku_board" in
     F.cleanup (fun () -> ignore (board#removeChild table));
     ignore (board#appendChild table)
@@ -327,20 +338,25 @@ struct
 end
 
 let onload () =
+  let pages =
+    Array.map
+      (fun (e : Dom.element) -> e#getAttribute "id")
+      (Dom.document#getElementsByClassName "slide") in
+
   let curr_page =
     try
       let p = Dom.window#_get_location#_get_hash in
       let p = (Javascript.Js_string.split p "#").(1) in
-      if List.mem p P.pages then p else List.hd P.pages
-    with _ -> List.hd P.pages in
+      if Util.mem pages p then p else pages.(0)
+    with _ -> pages.(0) in
 
   let page =
     Fd.keyEvent "keydown" Dom.document |>
         F.collect
           (fun p e ->
              match e#_get_keyCode with
-               | 37 -> P.prev p
-               | 39 -> P.next p
+               | 37 -> Util.prev pages p
+               | 39 -> Util.next pages p
                | _ -> p)
           curr_page |>
               F.hold curr_page in
@@ -348,23 +364,26 @@ let onload () =
   F.notify_b page (fun p -> Dom.window#_get_location#_set_hash p);
 
   (* show only the current page *)
-  List.iter
+  Array.iter
     (fun p ->
        F.blift page (fun p' -> if p = p' then "" else "none") |>
            Fd.attach_display_b (Dom.document#getElementById p))
-    P.pages;
+    pages;
 
   (* show page number (except on title page) *)
-  F.blift page (fun p -> if p != List.hd P.pages then "" else "none") |>
+  F.blift page (fun p -> if p != pages.(0) then "" else "none") |>
       Fd.attach_display_b (Dom.document#getElementById "nav");
-  (Dom.document#getElementById "nav_page_total")#_set_innerHTML (string_of_int (List.length P.pages));
-  F.blift page (fun p -> string_of_int (P.number p)) |>
+  (Dom.document#getElementById "nav_page_total")#_set_innerHTML (string_of_int (Array.length pages));
+  F.blift page (fun p -> string_of_int (Util.number pages p)) |>
       Fd.attach_innerHTML_b (Dom.document#getElementById "nav_page_num");
 
   (* page-specific stuff *)
   F.blift page
     begin function
-      | "clicks"-> Clicks.onload ()
+      | "behaviors" -> Behaviors.onload ()
+      | "glitch_free" -> Glitch_free.onload ()
+      | "dynamic_deps" -> Dynamic_deps.onload ()
+      | "events" -> Events.onload ()
       | "sudoku" -> Sudoku.onload ()
       | "bounce" -> Bounce.onload ()
       | _ -> ()
