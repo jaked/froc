@@ -50,7 +50,7 @@ val attach_fontSize_b : #Dom.element -> string Froc.behavior -> unit
 val appendChild : #Dom.node -> #Dom.node Froc.behavior -> unit
 val replaceNode : #Dom.node -> #Dom.node Froc.behavior -> unit
 
-val clicks : #Dom.element -> Dom.event Froc.event
+val clicks : #Dom.element -> Dom.mouseEvent Froc.event
 
 val event : string -> #Dom.element -> Dom.event Froc.event
 val mouseEvent : string -> #Dom.element -> Dom.mouseEvent Froc.event

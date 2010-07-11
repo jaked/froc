@@ -165,4 +165,4 @@ let keyEvent name (elem : #Dom.element) =
   cleanup (fun () -> elem#removeEventListener_keyEvent_ name f false);
   e
 
-let clicks (elem : #Dom.element) = event "click" elem
+let clicks (elem : #Dom.element) = mouseEvent "click" elem
