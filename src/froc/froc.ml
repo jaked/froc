@@ -174,7 +174,7 @@ let filter p t =
     end;
     rt
 
-let collect f init t =
+let collect_e f init t =
   if is_never t then never
   else
     let rt, ru = make_event () in
@@ -250,6 +250,8 @@ let hold_result ?eq init e =
 
 let hold ?eq init e = hold_result ?eq (Value init) e
 
+let collect_b f init t = hold init (collect_e f init t)
+
 let changes b =
   if is_constant b then never else
     let t, u = make_event () in
@@ -259,7 +261,7 @@ let changes b =
 let when_true b =
   map (fun b -> ()) (filter (fun b -> b) (changes b))
 
-let count t = hold 0 (collect (fun n _ -> n + 1) 0 t)
+let count t = collect_b (fun n _ -> n + 1) 0 t
 
 let make_cell v =
   let t, u = make_event () in

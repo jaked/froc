@@ -135,13 +135,13 @@ val lift : ?eq:('b -> 'b -> bool) -> ('a -> 'b) -> 'a behavior -> 'b behavior
      binding it to a behavior.
   *)
 
-val sample : 'b behavior -> 'b
+val sample : 'a behavior -> 'a
   (**
      [sample b] returns the current value of [b], or raises [b]'s
      exception if it is failed.
   *)
 
-val sample_result : 'b behavior -> 'b result
+val sample_result : 'a behavior -> 'a result
   (**
      Same as [sample] but returns a result.
   *)
@@ -333,21 +333,24 @@ val filter : ('a -> bool) -> 'a event -> 'a event
      governed by [e].
   *)
 
-val collect : ('b -> 'a -> 'b) -> 'b -> 'a event -> 'b event
+val collect_e : ('b -> 'a -> 'b) -> 'b -> 'a event -> 'b event
   (**
-     [collect f b e] is an event that maintains an internal state [s]
+     [collect_e f b e] is an event that maintains an internal state [s]
      (initialized to [b]); whenever [e] fires [v], [s'] becomes [f s
      v], the event fires [s'], and [s'] becomes the new internal
      state. The function [f] delimits a dynamic scope governed by [e].
 
      Special care must be taken when using [collect] with behavior- or
      event-valued events. The dynamic scope delimited by [f] is
-     cleaned up on each occurrence of [e]; any signals or created in
+     cleaned up on each occurrence of [e]; any signals created in
      [f] become detached on the next occurrence, so it is easy to wind
      up with detached signals in [s].
 
      This cleanup may be controlled through the use of [memo].
   *)
+
+val collect_b : ('b -> 'a -> 'b) -> 'b -> 'a event -> 'b behavior
+  (** Same as [collect_e] but returns a behavior. *)
 
 val join_e : 'a event event -> 'a event
   (**
