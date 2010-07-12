@@ -46,6 +46,17 @@ struct
   let number arr p = findi arr p  + 1
 end
 
+let attach_show_hide el =
+  Fd.keyEvent "keydown" Dom.document |>
+      F.collect_b
+        (fun d e ->
+           match e#_get_keyCode with
+             | 38 -> "none"
+             | 40 -> ""
+             | _ -> d)
+        "none" |>
+            Fd.attach_display_b el
+
 module Behaviors =
 struct
   let onload () =
@@ -57,7 +68,7 @@ struct
     Froc_dom.attach_innerHTML_b output
       (Froc.catch
          (fun () -> Froc.lift string_of_int incr)
-         (fun _ -> Froc.return ""))
+         (fun _ -> Froc.return ""));
 end
 
 module Glitch_free =
@@ -94,23 +105,49 @@ module Events =
 struct
   let onload () =
     let button1 = Dom.document#getElementById "events_button1" in
-    let clicks1 = Froc_dom.clicks button1 in
-    let count1 = Froc.count clicks1 in
-    let output1 = Dom.document#getElementById "events_output1" in
-    Froc_dom.attach_innerHTML_b output1
-      (Froc.catch
-         (fun () -> Froc.lift string_of_int count1)
-         (fun _ -> Froc.return ""));
+    let clicks = Froc_dom.clicks button1 in
+    let count1 = Froc.count clicks in
+    Froc_dom.attach_innerHTML_b
+      (Dom.document#getElementById "events_output1")
+      (Froc.lift string_of_int count1);
 
     let button2 = Dom.document#getElementById "events_button2" in
-    let clicks2 = Froc_dom.clicks button2 in
-    let shift_clicks2 = Froc.filter (fun e -> e#_get_shiftKey) clicks2 in
-    let count2 = Froc.count shift_clicks2 in
-    let output2 = Dom.document#getElementById "events_output2" in
-    Froc_dom.attach_innerHTML_b output2
-      (Froc.catch
-         (fun () -> Froc.lift string_of_int count2)
-         (fun _ -> Froc.return ""))
+    let shift_clicks = Froc.filter (fun e -> e#_get_shiftKey) (Froc_dom.clicks button2) in
+    let count2 = Froc.count shift_clicks in
+    Froc_dom.attach_innerHTML_b
+      (Dom.document#getElementById "events_output2")
+      (Froc.lift string_of_int count2);
+
+    let either_clicks = Froc.merge [ clicks; shift_clicks ] in
+    let count3 = Froc.count either_clicks in
+    Froc_dom.attach_innerHTML_b
+      (Dom.document#getElementById "events_output3")
+      (Froc.lift string_of_int count3);
+end
+
+module Fritter =
+struct
+  let onload () =
+    let text = Dom.document#getElementById "fritter_text" in
+    let count = Dom.document#getElementById "fritter_count" in
+    let tweet = Dom.document#getElementById "fritter_tweet" in
+
+    let length =
+      Froc.lift String.length (Froc_dom.input_value_b ~event:"keyup" text) in
+
+    let left = Froc.lift (fun x -> 140 - x) length in
+
+    let color = Froc.lift
+      (fun x -> if x < 10 then "#D40D12" else if x < 20 then "#5C0002"else "#CCC")
+      left in
+
+    let disabled = Froc.lift (fun x -> x < 0) left in
+
+    Froc_dom.attach_innerHTML_b count (Froc.lift string_of_int left);
+    Froc_dom.attach_color_b count color;
+    Froc_dom.attach_disabled_b tweet disabled;
+
+    attach_show_hide (Dom.document#getElementById "fritter_code");
 end
 
 module Sudoku =
@@ -136,7 +173,7 @@ struct
       let style = input#_get_style in
       style#_set_border "none";
       style#_set_padding "0px";
-      style#_set_fontSize "20px";
+      style#_set_fontSize "36px";
 
       let (cell, set_cell) = F.make_cell None in
       Fd.attach_input_value_b input
@@ -149,7 +186,7 @@ struct
              | "1" | "2" | "3" | "4" | "5"
              | "6" | "7" | "8" | "9"  as v -> Some (int_of_string v)
              | _ -> None)
-          (Fd.input_value_e input) in
+          (Fd.input_value_e ~event:"keyup" input) in
       F.notify_e ev set_cell;
       { i = i; j = j; cell = cell; set_cell = set_cell; input = input; } in
 
@@ -193,15 +230,15 @@ struct
       !squares in
 
     let adjacents { i = i; j = j } =
-      let adjacent { i = i'; j = j' } =
+      let adj { i = i'; j = j' } =
         (not (i' = i && j' = j)) &&
           (i' = i || j' = j ||
               (i' / 3 = i / 3 && j' / 3 = j / 3)) in
-      List.map (fun sq -> sq.cell) (List.filter adjacent squares) in
+      List.map (fun sq -> sq.cell) (List.filter adj squares) in
 
     List.iter
       (fun sq ->
-         let backgroundColor =
+         let bg =
            F.bindN (adjacents sq)
              (fun adjs ->
                 F.lift
@@ -210,7 +247,7 @@ struct
                      then "#ff0000"
                      else "#ffffff")
                   sq.cell) in
-         Fd.attach_backgroundColor_b sq.input backgroundColor)
+         Fd.attach_backgroundColor_b sq.input bg)
       squares;
 
     (squares, table)
@@ -232,6 +269,130 @@ struct
     ignore (board#appendChild table)
 end
 
+module Signup =
+struct
+  let onload () =
+    let (~$) x = Dom.document#getElementById x in
+    let (~<) x = Froc_dom.input_value_b ~$x in
+    let (|>) x f = f x in
+
+    let password_ok =
+      Froc.blift2 ~<"signup_password" ~<"signup_password2" begin fun p p2 ->
+        match p, p2 with
+          | "", _ | _, "" -> `Unset
+          | p, p2 when p = p2 -> `Ok
+          | _ -> `Mismatch
+      end in
+
+    let check_username = function
+      | "jaked" -> `Taken
+      | _ -> `Ok in
+
+    let check_username_rpc reqs =
+      let e, s = Froc.make_event () in
+      Froc.notify_e reqs begin fun req ->
+        Froc.send s (req, `Checking);
+        let res = check_username req in
+        ignore (Dom.window#setTimeout (fun () -> Froc.send s (req, res)) (Random.float 3000.))
+      end;
+      e in
+
+    let maybe_check_username reqs =
+      Froc.merge [
+        reqs |> Froc.filter (fun req -> req = "") |> Froc.map (fun _ -> "", `Unset);
+        reqs |> Froc.filter (fun req -> req <> "") |> check_username_rpc;
+      ] in
+
+    let username_ok =
+      let username = ~<"signup_username" in
+      Froc.changes username |>
+        maybe_check_username |>
+          Froc.filter (fun (req, _) -> Froc.sample username = req) |>
+            Froc.map (fun (_, res) -> res) |>
+              Froc.hold `Unset in
+
+    Froc_dom.attach_innerHTML_b ~$"signup_username_ok"
+      (Froc.blift username_ok begin function
+         | `Unset -> ""
+         | `Ok -> "ok"
+         | `Taken -> "taken"
+         | `Checking -> "checking..."
+       end);
+
+    Froc_dom.attach_innerHTML_b ~$"signup_password_ok"
+      (Froc.blift password_ok begin function
+         | `Unset -> ""
+         | `Ok -> "ok"
+         | `Mismatch -> "mismatch"
+       end);
+
+    Froc_dom.attach_disabled_b ~$"signup_signup"
+      (Froc.bliftN [ password_ok; username_ok ] begin fun oks ->
+         not (List.for_all (function `Ok -> true | _ -> false) oks)
+       end);
+
+    attach_show_hide (Dom.document#getElementById "signup_code");
+end
+
+module Signup2 =
+struct
+  let onload () =
+    let (~$) x = Dom.document#getElementById x in
+    let (~<) x = Froc_dom.input_value_b ~$x in
+    let (|>) x f = f x in
+
+    let password_ok =
+      Froc.blift2 ~<"signup_password" ~<"signup_password2" begin fun p p2 ->
+        match p, p2 with
+          | "", _ | _, "" -> `Unset
+          | p, p2 when p = p2 -> `Ok
+          | _ -> `Mismatch
+      end in
+
+    let check_username reqs =
+      let e, s = Froc.make_event () in
+      Froc.notify_e reqs begin fun req ->
+        if req = ""
+        then Froc.send s ("", `Unset)
+        else begin
+          Froc.send s (req, `Checking);
+          let res = match req with
+            | "jaked" -> `Taken
+            | _ -> `Ok in
+          ignore (Dom.window#setTimeout (fun () -> Froc.send s (req, res)) (Random.float 3000.))
+        end
+      end;
+      e in
+
+    let username_ok =
+      let username = ~<"signup_username" in
+      Froc.changes username |>
+        check_username |>
+          Froc.filter (fun (req, _) -> Froc.sample username = req) |>
+            Froc.map (fun (_, res) -> res) |>
+              Froc.hold `Unset in
+
+    Froc_dom.attach_innerHTML_b ~$"signup_username_ok"
+      (Froc.blift username_ok begin function
+         | `Unset -> ""
+         | `Ok -> "ok"
+         | `Taken -> "taken"
+         | `Checking -> "checking..."
+       end);
+
+    Froc_dom.attach_innerHTML_b ~$"signup_password_ok"
+      (Froc.blift password_ok begin function
+         | `Unset -> ""
+         | `Ok -> "ok"
+         | `Mismatch -> "mismatch"
+       end);
+
+    Froc_dom.attach_disabled_b ~$"signup_signup"
+      (Froc.bliftN [ password_ok; username_ok ] begin fun oks ->
+         not (List.for_all (function `Ok -> true | _ -> false) oks)
+       end);
+end
+
 module Bounce =
 struct
   let get id = D.document#getElementById id
@@ -239,10 +400,12 @@ struct
   let onload () =
     let paddle_radius = 25. in
     let ball_radius = 5. in
-    let min = 0. in
-    let max = 500. in
+    let xmin = 0. in
+    let xmax = 900. in
+    let ymin = 0. in
+    let ymax = 400. in
   
-    let init_p = (Random.float max, Random.float max) in
+    let init_p = (Random.float xmax, Random.float ymax) in
     let init_v = (Random.float 5., Random.float 5.) in
 
     let offset_x, offset_y =
@@ -255,8 +418,8 @@ struct
         let y = y - offset_y in
         let x = float_of_int x in
         let y = float_of_int y in
-        let x = if x < min then min else if x > max then max else x in
-        let y = if y < min then min else if y > max then max else y in
+        let x = if x < xmin then xmin else if x > xmax then xmax else x in
+        let y = if y < ymin then ymin else if y > ymax then ymax else y in
         (x, y)
       end in
   
@@ -266,17 +429,17 @@ struct
       F.fix_b begin fun bp ->
   
         let x_out_of_bounds =
-          F.map
-            (fun () -> `X_bounds)
-            (F.when_true
-               (F.blift bp (fun (x, _) -> x <= min || x >= max))) in
+          bp |>
+            F.lift (fun (x, _) -> x <= xmin || x >= xmax) |>
+              F.when_true |>
+                F.map (fun () -> `X_bounds) in
   
         let y_out_of_bounds =
-          F.map
-            (fun () -> `Y_bounds)
-            (F.when_true
-               (F.blift bp (fun (_, y) -> y <= min || y >= max))) in
-  
+          bp |>
+            F.lift (fun (_, y) -> y <= ymin || y >= ymax) |>
+              F.when_true |>
+                F.map (fun () -> `Y_bounds) in
+
         (*
           the merge below reports only the leftmost simultaneous event,
           so we have to account for the combination to avoid losing the
@@ -286,46 +449,44 @@ struct
           F.map2 (fun _ _ -> `Xy_bounds) x_out_of_bounds y_out_of_bounds in
   
         let hit_paddle =
-          F.map (fun () -> `Paddle)
-            (F.when_true
-               (F.blift bp begin fun (x, y) ->
-                  let (px, py) = F.sample paddle_point in
-                  let dist_x = px -. x in
-                  let dist_y = py -. y in
-                  let dist = paddle_radius +. ball_radius in
-                  dist_x *. dist_x +. dist_y *. dist_y <= dist *. dist
-                end)) in
+          bp |>
+            F.lift begin fun (x, y) ->
+              let (px, py) = F.sample paddle_point in
+              let dist_x = px -. x in
+              let dist_y = py -. y in
+              let dist = paddle_radius +. ball_radius in
+              dist_x *. dist_x +. dist_y *. dist_y <= dist *. dist
+            end |>
+              F.when_true |>
+                F.map (fun () -> `Paddle) in
   
         let v =
           F.fix_b begin fun v ->
-            F.hold
-              init_v
-              (F.map
-                 begin fun e ->
-                   let (vx, vy) = F.sample v in
-                   let (x, y) = F.sample bp in
-                   match e with
-                     | `X_bounds -> (-.vx, vy)
-                     | `Y_bounds -> (vx, -.vy)
-                     | `Xy_bounds -> (-.vx, -.vy)
-                     | `Paddle ->
-                         (* bounce v off the tangent to the paddle *)
-                         let (px, py) = F.sample paddle_point in
-                         let (nx, ny) =
-                           let (nx, ny) = (x -. px, y -. py) in
-                           let z = sqrt (nx *. nx +. ny *. ny) in
-                           (nx /. z, ny /. z) in
-                         let dp = vx *. nx +. vy *. ny in
-                         (vx -. 2. *. dp *. nx, vy -. 2. *. dp *. ny)
-                 end
-                 (F.merge [ xy_out_of_bounds; x_out_of_bounds; y_out_of_bounds; hit_paddle ]))
+            F.merge [ xy_out_of_bounds; x_out_of_bounds; y_out_of_bounds; hit_paddle ] |>
+              F.map begin fun e ->
+                let (vx, vy) = F.sample v in
+                let (x, y) = F.sample bp in
+                match e with
+                  | `X_bounds -> (-.vx, vy)
+                  | `Y_bounds -> (vx, -.vy)
+                  | `Xy_bounds -> (-.vx, -.vy)
+                  | `Paddle ->
+                      (* bounce v off the tangent to the paddle *)
+                      let (px, py) = F.sample paddle_point in
+                      let (nx, ny) =
+                        let (nx, ny) = (x -. px, y -. py) in
+                        let z = sqrt (nx *. nx +. ny *. ny) in
+                        (nx /. z, ny /. z) in
+                      let dp = vx *. nx +. vy *. ny in
+                      (vx -. 2. *. dp *. nx, vy -. 2. *. dp *. ny)
+              end |>
+                F.hold init_v
           end in
   
-        F.hold init_p
-          (F.collect
-             (fun (x, y) () -> let vx, vy = F.sample v in (x +. vx, y +. vy))
-             init_p
-             (Fd.ticks 20.))
+        Fd.ticks 20. |>
+          F.collect_b
+            (fun (x, y) () -> let vx, vy = F.sample v in (x +. vx, y +. vy))
+            init_p
       end in
   
     let ball =
@@ -352,14 +513,13 @@ let onload () =
 
   let page =
     Fd.keyEvent "keydown" Dom.document |>
-        F.collect
+        F.collect_b
           (fun p e ->
              match e#_get_keyCode with
                | 37 -> Util.prev pages p
                | 39 -> Util.next pages p
                | _ -> p)
-          curr_page |>
-              F.hold curr_page in
+          curr_page in
   (* track page history *)
   F.notify_b page (fun p -> Dom.window#_get_location#_set_hash p);
 
@@ -384,7 +544,9 @@ let onload () =
       | "glitch_free" -> Glitch_free.onload ()
       | "dynamic_deps" -> Dynamic_deps.onload ()
       | "events" -> Events.onload ()
+      | "fritter" -> Fritter.onload ()
       | "sudoku" -> Sudoku.onload ()
+      | "signup" -> Signup.onload ()
       | "bounce" -> Bounce.onload ()
       | _ -> ()
     end |> ignore
