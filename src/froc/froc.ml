@@ -63,7 +63,7 @@ let write_temp_result u r =
   temps := (fun () -> clear u) :: !temps;
   write_result u r
 
-let send_result s r =
+let rec send_result s r =
   match !temps with
     | [] ->
         with_run_queue begin fun () ->
@@ -72,17 +72,17 @@ let send_result s r =
           List.iter (fun f -> f ()) !temps;
           temps := []
         end
-    | _ -> failwith "already in update loop"
+    | _ -> send_result_deferred s r
+
+and send_result_deferred s r =
+  Queue.add (fun () -> send_result s r) q;
+  run_queue ()
 
 let send s v = send_result s (Value v)
 let send_exn s e = send_result s (Fail e)
 
-let send_result_deferred u r =
-  Queue.add (fun () -> send_result u r) q;
-  run_queue ()
-
-let send_deferred u v = send_result_deferred u (Value v)
-let send_exn_deferred u e = send_result_deferred u (Fail e)
+let send_deferred s v = send_result_deferred s (Value v)
+let send_exn_deferred s e = send_result_deferred s (Fail e)
 
 let never_eq _ _ = false
 
