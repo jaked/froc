@@ -334,65 +334,6 @@ struct
     attach_show_hide (Dom.document#getElementById "signup_code");
 end
 
-module Signup2 =
-struct
-  let onload () =
-    let (~$) x = Dom.document#getElementById x in
-    let (~<) x = Froc_dom.input_value_b ~$x in
-    let (|>) x f = f x in
-
-    let password_ok =
-      Froc.blift2 ~<"signup_password" ~<"signup_password2" begin fun p p2 ->
-        match p, p2 with
-          | "", _ | _, "" -> `Unset
-          | p, p2 when p = p2 -> `Ok
-          | _ -> `Mismatch
-      end in
-
-    let check_username reqs =
-      let e, s = Froc.make_event () in
-      Froc.notify_e reqs begin fun req ->
-        if req = ""
-        then Froc.send s ("", `Unset)
-        else begin
-          Froc.send s (req, `Checking);
-          let res = match req with
-            | "jaked" -> `Taken
-            | _ -> `Ok in
-          ignore (Dom.window#setTimeout (fun () -> Froc.send s (req, res)) (Random.float 3000.))
-        end
-      end;
-      e in
-
-    let username_ok =
-      let username = ~<"signup_username" in
-      Froc.changes username |>
-        check_username |>
-          Froc.filter (fun (req, _) -> Froc.sample username = req) |>
-            Froc.map (fun (_, res) -> res) |>
-              Froc.hold `Unset in
-
-    Froc_dom.attach_innerHTML_b ~$"signup_username_ok"
-      (Froc.blift username_ok begin function
-         | `Unset -> ""
-         | `Ok -> "ok"
-         | `Taken -> "taken"
-         | `Checking -> "checking..."
-       end);
-
-    Froc_dom.attach_innerHTML_b ~$"signup_password_ok"
-      (Froc.blift password_ok begin function
-         | `Unset -> ""
-         | `Ok -> "ok"
-         | `Mismatch -> "mismatch"
-       end);
-
-    Froc_dom.attach_disabled_b ~$"signup_signup"
-      (Froc.bliftN [ password_ok; username_ok ] begin fun oks ->
-         not (List.for_all (function `Ok -> true | _ -> false) oks)
-       end);
-end
-
 module Bounce =
 struct
   let get id = D.document#getElementById id
@@ -529,6 +470,15 @@ let onload () =
        F.blift page (fun p' -> if p = p' then "" else "none") |>
            Fd.attach_display_b (Dom.document#getElementById p))
     pages;
+
+  (* elapsed time *)
+  Fd.ticks 1000. |>
+      F.count |>
+          F.lift (fun t ->
+                    let m = t / 60 in
+                    let s = t mod 60 in
+                    Printf.sprintf "%02d:%02d" m s) |>
+              Fd.attach_innerHTML_b (Dom.document#getElementById "nav_time");
 
   (* show page number (except on title page) *)
   F.blift page (fun p -> if p != pages.(0) then "" else "none") |>

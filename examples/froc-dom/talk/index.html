@@ -7,7 +7,7 @@
   <body>
     <div id="slides">
 
-      <div id="title" class="slide center">
+      <div id="title" class="slide center" style="display:none">
         <h1 id="title_title">Better AJAX UIs<br/>with<br/>Functional Reactive Programming</h1>
 
         <p id="title_email">jake@donham.org</p>
@@ -43,7 +43,7 @@
 
         <p>Problems:</p>
         <ul>
-          <li>state + concurrency = pain (GUIs inherently concurrent)</li>
+          <li>state + concurrency = pain</li>
           <li>unmodular: callback soup, control inversion</li>
         </ul>
 
@@ -53,33 +53,14 @@
       <div id="gui_not_hard" class="slide" style="display:none">
         <h2>GUIs should not be hard!</h2>
 
-        <p>Typical GUI represents a <em>thing</em></p>
-        <ul>
-          <li>internal model of the thing</li>
-          <li>input events control model</li>
-          <li>render view of thing from model</li>
-        </ul>
+        <p>Model: <code style="margin-left: 20px"><span class="type">var</span> <span class="variable-name">e</span> = <span class="keyword">new</span> <span class="type">Elephant</span>();</code></p>
+        <p>View: <img style="margin-left: 50px; vertical-align: middle" src="elephant.jpg"></p>
 
-        <p>Elements of functional programming:</p>
-        <ul>
-          <li>view is a pure function of model</li>
-          <li>model is a pure function of events?</li>
-        </ul>
-      </div>
+        <p>View is a function of model, model is a function of events.</p>
 
-      <div id="frp" class="slide" style="display:none">
-        <h2>Functional reactive programming</h2>
+        <p>Functional reactive programming: write them that way!</p>
 
-        <br/>
-
-        <p>Slogan:<p>
-        <p style="margin-left: 250px"><b>Dependencies not callbacks!</b></p>
-
-        <br/><br/>
-
-        <p>Think:<p>
-        <p style="margin-left: 200px"><b>Spreadsheet cells, without the spreadsheet</b></p>
-        <br/>
+        <p>Slogan: <b>Dependencies, not callbacks.</b></p>
       </div>
 
       <div id="ocaml_etc" class="slide" style="display:none">
@@ -405,7 +386,7 @@
   <span class="tuareg-font-lock-governing">val</span> <span class="variable-name">hold </span><span class="tuareg-font-lock-operator">:</span> <span class="tuareg-font-lock-operator">'</span><span class="type">a </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">a event </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">a behavior</span>
 
   <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">username_ok </span><span class="tuareg-font-lock-operator">=</span>
-    <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">username </span><span class="tuareg-font-lock-operator">=</span> <span class="tuareg-font-lock-operator">~&lt;</span><span class="string">"signup_username"</span> <span class="tuareg-font-lock-governing">in</span>
+    <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">username </span><span class="tuareg-font-lock-operator">=</span> <span class="tuareg-font-lock-operator">~&lt;</span><span class="string">"username"</span> <span class="tuareg-font-lock-governing">in</span>
     <span class="type">Froc</span>.changes username <span class="tuareg-font-lock-operator">|&gt;</span>
       maybe_check_username <span class="tuareg-font-lock-operator">|&gt;</span>
         <span class="type">Froc</span>.filter <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="tuareg-font-lock-operator">(</span><span class="variable-name">req</span><span class="tuareg-font-lock-operator">,</span><span class="variable-name"> _</span><span class="tuareg-font-lock-operator">)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">-&gt;</span> <span class="type">Froc</span>.sample username <span class="tuareg-font-lock-operator">=</span> req<span class="tuareg-font-lock-operator">)</span> <span class="tuareg-font-lock-operator">|&gt;</span>
@@ -470,16 +451,9 @@
         <p>OCaml is a sweet-spot for FRP:</p>
         <ul>
           <li>value-oriented</li>
-          <li>higher-order functions</li>
-          <li>static typing, but types inferred</li>
+          <li>functions are data</li>
+          <li>static typing, types inferred</li>
           <li>imperative implementation possible</li>
-        </ul>
-
-        <p>But FRP impls in many languages:</p>
-        <ul>
-          <li>Scheme (<a href="http://www.cs.brown.edu/~greg/">FrTime</a>), Javascript (<a href="http://www.flapjax-lang.org/">Flapjax</a>)</li>
-          <li>Haskell (<a href="http://conal.net/fran/">Fran</a> and many descendents)</li>
-          <li>Scala (<a href="http://lamp.epfl.ch/~imaier/">Scala.React</a>), even Lua (<a href="http://www.lua.inf.puc-rio.br/luagravity/">LuaGravity</a>)</li>
         </ul>
       </div>
 
@@ -487,22 +461,22 @@
         <h2>Thanks!</h2>
         <p>Takeaways:</p>
         <ul>
-          <li>functional programming is important</li>
-          <li>immutable values are important</li>
-          <li>types are important</li>
+          <li>functional programming matters</li>
+          <li>types matter</li>
         </ul>
 
         <p>Code:</p>
         <ul>
-          <li><a href="http://github.com/jaked/ocamljs">http://github.com/jaked/ocamljs</a></li>
           <li><a href="http://github.com/jaked/froc">http://github.com/jaked/froc</a></li>
+          <li><a href="http://github.com/jaked/ocamljs">http://github.com/jaked/ocamljs</a></li>
         </ul>
       </div>
 
     </div>
 
     <div id="nav" style="display:none">
-      <span id="nav_page_num">0</span> / <span id="nav_page_total"></span>
+      <span style="float:left" id="nav_time"></span>
+      <span id="nav_page_num"></span> / <span id="nav_page_total"></span>
     </div>
   </body>
 </html>
