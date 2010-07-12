@@ -90,14 +90,17 @@ let mouse_e () =
 
 let mouse_b () = hold (0, 0) (mouse_e ())
 
-let input_value_e input =
+let on_event_prop_e el ev pf =
   let e, s = make_event () in
-  let f _ = send s input#_get_value in
-  input#addEventListener "change" f false;
-  cleanup (fun () -> input#addEventListener "change" f false);
+  let f _ = send s (pf el) in
+  el#addEventListener ev f false;
+  cleanup (fun () -> el#removeEventListener ev f false);
   e
 
-let input_value_b input = hold input#_get_value (input_value_e input)
+let on_event_prop_b el ev pf = hold (pf el) (on_event_prop_e el ev pf)
+
+let input_value_e ?(event="change") input = on_event_prop_e input event (fun i -> i#_get_value)
+let input_value_b ?(event="change") input = on_event_prop_b input event (fun i -> i#_get_value)
 
 let attach_innerHTML_e el e = notify_e e (fun s -> el#_set_innerHTML s)
 let attach_innerHTML_b el b = notify_b b (fun s -> el#_set_innerHTML s)
@@ -108,11 +111,17 @@ let attach_input_value_b i b = notify_b b (fun v -> i#_set_value v)
 let attach_backgroundColor_e el e = notify_e e (fun v -> el#_get_style#_set_backgroundColor v)
 let attach_backgroundColor_b el b = notify_b b (fun v -> el#_get_style#_set_backgroundColor v)
 
+let attach_color_e el e = notify_e e (fun v -> el#_get_style#_set_color v)
+let attach_color_b el b = notify_b b (fun v -> el#_get_style#_set_color v)
+
 let attach_display_e el e = notify_e e (fun v -> el#_get_style#_set_display v)
 let attach_display_b el b = notify_b b (fun v -> el#_get_style#_set_display v)
 
 let attach_fontSize_e el e = notify_e e (fun v -> el#_get_style#_set_fontSize v)
 let attach_fontSize_b el b = notify_b b (fun v -> el#_get_style#_set_fontSize v)
+
+let attach_disabled_e el e = notify_e e (fun v -> el#_set_disabled v)
+let attach_disabled_b el b = notify_b b (fun v -> el#_set_disabled v)
 
 let node_of_result = function
   | Value v -> (v :> Dom.node)

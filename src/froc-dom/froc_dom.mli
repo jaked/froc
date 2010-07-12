@@ -29,8 +29,8 @@ val delay_bb : 'a Froc.behavior -> float Froc.behavior -> 'a Froc.behavior
 val mouse_e : unit -> (int * int) Froc.event
 val mouse_b : unit -> (int * int) Froc.behavior
 
-val input_value_e : #Dom.input -> string Froc.event
-val input_value_b : #Dom.input -> string Froc.behavior
+val input_value_e : ?event:string -> #Dom.input -> string Froc.event
+val input_value_b : ?event:string -> #Dom.input -> string Froc.behavior
 
 val attach_innerHTML_e : #Dom.element -> string Froc.event -> unit
 val attach_innerHTML_b : #Dom.element -> string Froc.behavior -> unit
@@ -41,11 +41,17 @@ val attach_input_value_b : #Dom.input -> string Froc.behavior -> unit
 val attach_backgroundColor_e : #Dom.element -> string Froc.event -> unit
 val attach_backgroundColor_b : #Dom.element -> string Froc.behavior -> unit
 
+val attach_color_e : #Dom.element -> string Froc.event -> unit
+val attach_color_b : #Dom.element -> string Froc.behavior -> unit
+
 val attach_display_e : #Dom.element -> string Froc.event -> unit
 val attach_display_b : #Dom.element -> string Froc.behavior -> unit
 
 val attach_fontSize_e : #Dom.element -> string Froc.event -> unit
 val attach_fontSize_b : #Dom.element -> string Froc.behavior -> unit
+
+val attach_disabled_e : #Dom.element -> bool Froc.event -> unit
+val attach_disabled_b : #Dom.element -> bool Froc.behavior -> unit
 
 val appendChild : #Dom.node -> #Dom.node Froc.behavior -> unit
 val replaceNode : #Dom.node -> #Dom.node Froc.behavior -> unit
