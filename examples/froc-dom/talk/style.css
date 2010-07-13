@@ -9,6 +9,16 @@ h1 {
 .slide pre {
   font-size: 20px;
 }
+.slide code {
+  font-size: 20px;
+}
+
+#ocaml_etc_syntax td {
+    text-align: center;
+    padding: 10px;
+}
+#ocaml_etc_syntax table {
+}
 
 .center {
   height: 752px;
@@ -31,6 +41,9 @@ h1 {
   margin-left: -40px;
 }
 
+.output {
+}
+
 #nav {
   position: absolute;
   top: 738px;
@@ -51,6 +64,124 @@ h1 {
 
 li {
   margin-top: 20px;
+}
+
+.border_left {
+    border-left: solid;
+    border-width: 1px;
+}
+
+.border_bottom {
+    border-bottom: solid;
+    border-width: 1px;
+}
+
+#fritter_what {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 20px;
+    font-weight: normal;
+    margin-bottom: 10px;
+}
+
+#fritter_count {
+-webkit-border-horizontal-spacing: 0px;
+-webkit-border-vertical-spacing: 0px;
+background-attachment: scroll;
+background-clip: border-box;
+background-color: transparent;
+background-image: none;
+background-origin: padding-box;
+border-bottom-color: #CCC;
+border-collapse: separate;
+border-left-color: #CCC;
+border-right-color: #CCC;
+border-top-color: #CCC;
+color: #CCC;
+display: block;
+font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+font-size: 24px;
+font-style: normal;
+font-variant: normal;
+font-weight: bold;
+height: 23px;
+line-height: 22px;
+margin-bottom: 0px;
+margin-left: 0px;
+margin-right: 0px;
+margin-top: 0px;
+padding-bottom: 0px;
+padding-left: 0px;
+padding-right: 0px;
+padding-top: 0px;
+position: absolute;
+right: 10px;
+text-align: left;
+top: 0px;
+width: 39px;
+z-index: auto;
+}
+
+#fritter_text {
+background-color: white;
+border-bottom-color: rgba(161, 170, 176, 0.960938);
+border-bottom-left-radius: 3px;
+border-bottom-right-radius: 3px;
+border-bottom-style: solid;
+border-bottom-width: 1px;
+border-collapse: separate;
+border-left-color: rgba(161, 170, 176, 0.960938);
+border-left-style: solid;
+border-left-width: 1px;
+border-right-color: rgba(161, 170, 176, 0.960938);
+border-right-style: solid;
+border-right-width: 1px;
+border-top-color: rgba(161, 170, 176, 0.960938);
+border-top-left-radius: 3px;
+border-top-right-radius: 3px;
+border-top-style: solid;
+border-top-width: 1px;
+color: black;
+cursor: auto;
+display: inline-block;
+font-family: 'Lucida Grande', sans-serif;
+font-size: 14px;
+font-style: normal;
+font-variant: normal;
+font-weight: normal;
+height: 44px;
+letter-spacing: normal;
+line-height: 15px;
+margin-bottom: 0px;
+margin-left: 0px;
+margin-right: 0px;
+margin-top: 0px;
+overflow-x: auto;
+overflow-y: auto;
+padding-bottom: 4px;
+padding-left: 2px;
+padding-right: 2px;
+padding-top: 4px;
+position: static;
+resize: none;
+text-align: auto;
+text-indent: 0px;
+text-shadow: none;
+text-transform: none;
+white-space: pre-wrap;
+width: 515px;
+word-spacing: 0px;
+word-wrap: break-word;
+z-index: auto;
+}
+
+#fritter_tweet {
+    position: absolute;
+    top: 80px;
+    right: 10px;
+}
+
+#sudoku_board {
+    margin-top: 100px;
 }
 
 /* htmlize stuff */
