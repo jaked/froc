@@ -214,7 +214,7 @@ echo "Effective options:"
 print_options
 echo
 
-pkglist="froc"
+pkglist="froc froc-syntax"
 
 if [ $enable_ocamljs -gt 0 ]; then
     pkglist="$pkglist froc-dom"

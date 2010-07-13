@@ -1,0 +1,5 @@
+name = "froc-syntax"
+version = "0.2"
+description = "syntax extension for froc"
+archive(syntax,preprocessor) = "pa_froc.cmo"
+archive(syntax,toploop) = "pa_froc.cmo"
