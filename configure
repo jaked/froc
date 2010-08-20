@@ -49,8 +49,7 @@ if check_library stdlib; then
     echo "found"
 else
     echo "not found"
-    echo "Make sure that ocamlfind is in your PATH, or download findlib"
-    echo "from www.ocaml-programming.de"
+    echo "Download findlib from http://projects.camlcity.org/projects/findlib.html"
     exit 1
 fi
 
