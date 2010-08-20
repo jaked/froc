@@ -1,6 +1,6 @@
 -include ../../Makefile.conf
 
-ifeq ($(ENABLE_OCAMLJS),1)
+ifeq ($(HAS_OCAMLJS),1)
 CMJSA=froc.cmjsa
 endif
 

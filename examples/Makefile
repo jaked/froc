@@ -2,7 +2,7 @@
 
 DIRS=
 
-ifeq ($(ENABLE_OCAMLJS),1)
+ifeq ($(HAS_OCAMLJS),1)
 DIRS += froc-dom
 endif
 
