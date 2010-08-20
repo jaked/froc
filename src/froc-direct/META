@@ -1,0 +1,5 @@
+name="Froc-direct"
+requires="froc,delimcc"
+version="0.3"
+archive(byte) = "froc-direct.cma"
+archive(native) = "froc-direct.cmxa"

@@ -68,12 +68,28 @@ else
 fi
 
 ######################################################################
+# Check that delimcc is available:
+
+printf "%s" "Checking for delimcc... "
+has_delimcc=0
+if check_library delimcc; then
+    echo "found"
+    has_delimcc=1
+else
+    echo "not found, continuing"
+    echo "Download delimcc from http://okmij.org/ftp/continuations/"
+fi
+
+######################################################################
 # Summary
 
 pkglist="froc froc-syntax"
 
 if [ $has_ocamljs -gt 0 ]; then
     pkglist="$pkglist froc-dom"
+fi
+if [ $has_delimcc -gt 0 ]; then
+    pkglist="$pkglist froc-direct"
 fi
 
 ######################################################################
@@ -89,6 +105,7 @@ VERSION = $version
 PKGLIST = $pkglist
 
 HAS_OCAMLJS = $has_ocamljs
+HAS_DELIMCC = $has_delimcc
 _EOF_
 
 ######################################################################
