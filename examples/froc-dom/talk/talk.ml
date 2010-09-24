@@ -286,6 +286,7 @@ struct
 
     let check_username = function
       | "jaked" -> `Taken
+      | "" -> `Unset
       | _ -> `Ok in
 
     let check_username_rpc reqs =
