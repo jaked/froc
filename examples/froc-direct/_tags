@@ -1,0 +1,2 @@
+<*.ml*> : pkg_froc-direct
+<*.byte> or <*.native> : pkg_froc-direct
