@@ -85,7 +85,7 @@ let mouse_e () =
   let e, s = make_event () in
   let f me = send s (me#_get_clientX, me#_get_clientY) in
   Dom.document#addEventListener_mouseEvent_ "mousemove" f false;
-  cleanup (fun () -> Dom.document#addEventListener_mouseEvent_ "mousemove" f false);
+  cleanup (fun () -> Dom.document#removeEventListener_mouseEvent_ "mousemove" f false);
   e
 
 let mouse_b () = hold (0, 0) (mouse_e ())
@@ -98,6 +98,9 @@ let on_event_prop_e el ev pf =
   e
 
 let on_event_prop_b el ev pf = hold (pf el) (on_event_prop_e el ev pf)
+
+let window_innerSize_e () = on_event_prop_e Dom.window "resize" (fun w -> w#_get_innerWidth, w#_get_innerHeight)
+let window_innerSize_b () = on_event_prop_b Dom.window "resize" (fun w -> w#_get_innerWidth, w#_get_innerHeight)
 
 let input_value_e ?(event="change") input = on_event_prop_e input event (fun i -> i#_get_value)
 let input_value_b ?(event="change") input = on_event_prop_b input event (fun i -> i#_get_value)

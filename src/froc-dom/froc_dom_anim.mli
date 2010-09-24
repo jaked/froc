@@ -24,6 +24,9 @@ type shape = Dom.canvasRenderingContext2D -> unit
 
 val color : ?a:int -> int -> int -> int -> color
 
+val fillRect : point -> float -> float -> color -> shape
+val strokeRect : point -> float -> float -> color -> shape
+
 val disk : point -> float -> color -> shape
 
 val filled_poly : point list -> color -> shape

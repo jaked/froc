@@ -29,6 +29,9 @@ val delay_bb : 'a Froc.behavior -> float Froc.behavior -> 'a Froc.behavior
 val mouse_e : unit -> (int * int) Froc.event
 val mouse_b : unit -> (int * int) Froc.behavior
 
+val window_innerSize_e : unit -> (int * int) Froc.event
+val window_innerSize_b : unit -> (int * int) Froc.behavior
+
 val input_value_e : ?event:string -> #Dom.input -> string Froc.event
 val input_value_b : ?event:string -> #Dom.input -> string Froc.behavior
 

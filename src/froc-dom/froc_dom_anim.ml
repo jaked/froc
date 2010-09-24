@@ -27,6 +27,16 @@ let color ?a r g b =
       | None -> Printf.sprintf "rgb(%d,%d,%d)" r g b
       | Some a -> Printf.sprintf "rgba(%d,%d,%d,%d)" r g b a
 
+let fillRect (x, y) w h color : shape =
+  (fun ctx ->
+     ctx#_set_fillStyle color;
+     ctx#fillRect x y w h)
+
+let strokeRect (x, y) w h color : shape =
+  (fun ctx ->
+     ctx#_set_strokeStyle color;
+     ctx#strokeRect x y w h)
+
 let disk (cx, cy) radius color : shape =
   (fun ctx ->
     ctx#_set_fillStyle color;
