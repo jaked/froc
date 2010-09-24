@@ -21,13 +21,13 @@ let read t =
       | Some p -> p in
   active_prompt := None;
 
-  Delimcc.take_subcont p begin fun sk () ->
-    Froc.notify_result_b t begin fun r ->
+  Delimcc.shift0 p begin fun k ->
+    Froc.notify_result_b t begin fun _ ->
       active_prompt := Some p;
-      Delimcc.push_delim_subcont sk begin fun () ->
-        match r with
-          | Froc.Value v -> v
-          | Froc.Fail e -> raise e
-      end
+      k ()
     end
-  end
+  end;
+  Froc.sample t
+
+let (~|) = direct
+let (~.) = read
