@@ -446,6 +446,37 @@
         </ul>
       </div>
 
+      <div id="direct" class="slide" style="display:none">
+        <h2>Direct style FRP</h2>
+
+        <p>With a syntax extension:</p>
+
+<pre>
+  <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">b3 </span><span class="tuareg-font-lock-operator">=</span> <span class="tuareg-font-lock-governing">lbt</span> <span class="variable-name">b1 </span><span class="tuareg-font-lock-operator">=</span> b1 <span class="tuareg-font-lock-governing">and</span> <span class="variable-name">b2 </span><span class="tuareg-font-lock-operator">=</span> b2 <span class="tuareg-font-lock-governing">in</span> <span class="type">Froc</span>.return <span class="tuareg-font-lock-operator">(</span>b1 <span class="tuareg-font-lock-operator">+</span> b2<span class="tuareg-font-lock-operator">)</span>
+</pre>
+
+        <p>becomes</p>
+
+<pre>
+  <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">b3 </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.bind2 b1 b2 <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">b1 b2 </span><span class="tuareg-font-lock-operator">-&gt;</span> <span class="type">Froc</span>.return <span class="tuareg-font-lock-operator">(</span>b1 <span class="tuareg-font-lock-operator">+</span> b2<span class="tuareg-font-lock-operator">))</span>
+</pre>
+
+        <p>With delimited continuations:</p>
+
+    <pre>
+  <span class="tuareg-font-lock-governing">val</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">(~|)</span> <span class="tuareg-font-lock-operator">:</span> <span class="tuareg-font-lock-operator">(</span><span class="type">unit </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">a</span><span class="tuareg-font-lock-operator">)</span><span class="type"> </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">a Froc.behavior</span>
+  <span class="tuareg-font-lock-governing">val</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">(~.)</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">:</span> <span class="tuareg-font-lock-operator">'</span><span class="type">a Froc.behavior </span><span class="tuareg-font-lock-operator">-&gt;</span><span class="type"> </span><span class="tuareg-font-lock-operator">'</span><span class="type">a</span>
+
+  <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">b3 </span><span class="tuareg-font-lock-operator">=</span> <span class="tuareg-font-lock-operator">~|(</span><span class="keyword">fun</span> <span class="tuareg-font-lock-operator">()</span><span class="variable-name"> </span><span class="tuareg-font-lock-operator">-&gt;</span> <span class="tuareg-font-lock-operator">~.</span>b1 <span class="tuareg-font-lock-operator">+</span> <span class="tuareg-font-lock-operator">~.</span>b2<span class="tuareg-font-lock-operator">)</span>
+</pre>
+
+    <p>is (roughly) equivalent to:</p>
+
+<pre>
+  <span class="tuareg-font-lock-governing">let</span> <span class="variable-name">b3 </span><span class="tuareg-font-lock-operator">=</span> <span class="type">Froc</span>.bind b1 <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">b1 </span><span class="tuareg-font-lock-operator">-&gt;</span> <span class="type">Froc</span>.bind <span class="tuareg-font-lock-operator">(</span><span class="keyword">fun</span> <span class="variable-name">b2 </span><span class="tuareg-font-lock-operator">-&gt;</span> b1 <span class="tuareg-font-lock-operator">+</span> b2<span class="tuareg-font-lock-operator">))</span>
+</pre>
+      </div>
+
       <div id="thanks" class="slide" style="display:none">
         <h2>Thanks!</h2>
         <p>Takeaways:</p>
