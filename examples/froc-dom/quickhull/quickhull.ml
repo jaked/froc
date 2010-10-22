@@ -193,7 +193,7 @@ let onload () =
         let p = p +. v in
         let v = if p <= min || p >= max then -.v else v in
         p, v in
-      F.collect collect (init, v) ticks |>
+      F.collect_e collect (init, v) ticks |>
           F.map fst |>
               F.hold init in
     let x = coord () and y = coord () in
@@ -219,7 +219,7 @@ let onload () =
       | `Stationary -> let v = v + 1 in (v, stationary v)
       | `Bouncing -> let v = v + 1 in (v, bouncing v)
       | `Remove -> match v with 0 -> (0, lookup 0) | v -> let v = v - 1 in (v, lookup v) in
-    F.collect collect (0, L.nil ()) clicks |>
+    F.collect_e collect (0, L.nil ()) clicks |>
         F.map snd |>
             F.hold (L.nil ()) |>
                 F.join_b in

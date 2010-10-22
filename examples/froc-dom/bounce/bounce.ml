@@ -93,11 +93,10 @@ let onload () =
                (F.merge [ xy_out_of_bounds; x_out_of_bounds; y_out_of_bounds; hit_paddle ]))
         end in
 
-      F.hold init_p
-        (F.collect
-           (fun (x, y) () -> let vx, vy = F.sample v in (x +. vx, y +. vy))
-           init_p
-           (Fd.ticks 20.))
+      F.collect_b
+        (fun (x, y) () -> let vx, vy = F.sample v in (x +. vx, y +. vy))
+        init_p
+        (Fd.ticks 20.)
     end in
 
   let ball =
